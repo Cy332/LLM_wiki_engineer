@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新手後端工程師實務須知 — Engineering Onboarding Deck</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-muted: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #e2e8f0;
+      --accent-primary: #2563eb;
+      --accent-soft: #dbeafe;
+    }
+    html.dark {
+      --bg-main: #0b0f19;
+      --bg-surface: #111827;
+      --bg-muted: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #1f2937;
+      --accent-primary: #3b82f6;
+      --accent-soft: #1e3a8a;
+    }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      overflow: hidden;
+    }
+    .surface-card {
+      background-color: var(--bg-surface);
+      border-color: var(--border-color);
+    }
+    .muted-box {
+      background-color: var(--bg-muted);
+      border-color: var(--border-color);
+    }
+    .text-secondary {
+      color: var(--text-muted);
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .slide-enter {
+      animation: fadeSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col select-none">
+
+  <!-- Top Progress Bar -->
+  <div class="w-full h-1 bg-slate-200 dark:bg-slate-800 shrink-0">
+    <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 transition-all duration-300" style="width: 8.33%"></div>
+  </div>
+
+  <!-- Top Header Navigation -->
+  <header class="h-14 surface-card border-b px-4 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <button id="btn-sidebar" onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 transition" title="切換章節大綱 (T)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/>
+        </svg>
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase rounded-full bg-blue-600 text-white">LLM Wiki 編譯教材</span>
+        <h1 class="font-bold text-sm sm:text-base tracking-tight truncate">新手後端工程師實務須知 <span class="text-secondary font-normal hidden md:inline">— 從版控、協作到高併發架構避坑指南</span></h1>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span id="module-badge" class="hidden sm:inline-block text-xs font-medium px-2.5 py-1 rounded-md muted-box border"></span>
+      <button onclick="toggleNotes()" id="btn-notes" class="px-3 py-1.5 text-xs font-medium rounded-lg border surface-card hover:border-blue-500 transition flex items-center gap-1.5" title="講者備忘錄與 Wiki 來源 (N)">
+        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span>講者備忘錄 (N)</span>
+      </button>
+      <button onclick="toggleTheme()" class="p-2 rounded-lg border surface-card hover:border-blue-500 transition" title="切換深淺色主題 (D)">
+        <svg id="icon-sun" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="icon-moon" class="w-4 h-4 block dark:hidden text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+      <button onclick="toggleFullscreen()" class="p-2 rounded-lg border surface-card hover:border-blue-500 transition hidden sm:block" title="全螢幕切換 (F)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Collapsible Chapter Sidebar -->
+    <aside id="sidebar" class="w-72 surface-card border-r flex flex-col shrink-0 transition-all duration-200 z-10 overflow-y-auto">
+      <div class="p-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-secondary">章節大綱 (12 頁)</span>
+        <span class="text-xs text-secondary">快捷鍵 `1-9`</span>
+      </div>
+      <nav id="toc-list" class="p-2 space-y-1 flex-1 overflow-y-auto text-sm"></nav>
+      <div class="p-3 border-t border-slate-200 dark:border-slate-800 text-xs text-secondary space-y-1">
+        <div class="flex justify-between"><span>上一頁 / 下一頁</span><kbd class="px-1.5 py-0.5 rounded muted-box border">←</kbd> <kbd class="px-1.5 py-0.5 rounded muted-box border">→</kbd></div>
+        <div class="flex justify-between"><span>講者備忘錄</span><kbd class="px-1.5 py-0.5 rounded muted-box border">N</kbd></div>
+        <div class="flex justify-between"><span>深淺色主題</span><kbd class="px-1.5 py-0.5 rounded muted-box border">D</kbd></div>
+      </div>
+    </aside>
+
+    <!-- Slide Viewport & Speaker Notes Drawer -->
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+      <!-- Slide Stage -->
+      <div id="slide-stage" class="flex-1 overflow-y-auto p-6 md:p-10 lg:p-12 flex items-start justify-center select-text">
+        <div id="slide-container" class="w-full max-w-5xl my-auto slide-enter"></div>
+      </div>
+
+      <!-- Speaker Notes Drawer -->
+      <div id="notes-drawer" class="hidden surface-card border-t border-amber-500/40 px-6 py-4 max-h-48 overflow-y-auto shrink-0 shadow-lg">
+        <div class="max-w-5xl mx-auto">
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-500">講者備忘錄 (Speaker Notes)</span>
+              <span id="notes-wiki-links" class="text-xs text-blue-400 font-mono"></span>
+            </div>
+            <button onclick="toggleNotes()" class="text-xs text-secondary hover:underline">關閉</button>
+          </div>
+          <p id="notes-content" class="text-sm leading-relaxed text-secondary select-text"></p>
+        </div>
+      </div>
+
+      <!-- Bottom Slide Controls -->
+      <footer class="h-12 surface-card border-t px-6 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 text-xs text-secondary">
+          <span>Slide</span>
+          <span id="slide-counter" class="font-bold text-sm text-blue-500">1 / 12</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="prevSlide()" id="btn-prev" class="px-3.5 py-1.5 rounded-lg border surface-card hover:border-blue-500 disabled:opacity-40 transition text-xs font-medium flex items-center gap-1">
+            <span>← 上一頁</span>
+          </button>
+          <button onclick="nextSlide()" id="btn-next" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 transition text-xs font-semibold flex items-center gap-1">
+            <span>下一頁 →</span>
+          </button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    const slides = [
+      {
+        id: 1,
+        module: "開場與導覽",
+        title: "新手後端工程師實務須知",
+        subtitle: "從「寫出能動的 Code」到「駕馭高併發、高可靠的生產環境系統」",
+        wikiRef: "[[index]] | [[AGENTS]]",
+        notes: "歡迎加入後端與資料工程團隊！這份簡報由我們的實務 LLM Wiki 編譯而成。許多新手工程師在學校或 Side Project 習慣了單機、無併發的環境，但在真實 Production 中，亂用 Git reset、忘了設 K8s Probe、或在 Redis 塞一顆 20MB 的 Key，都可能引發線上災難。今天我們用 5 大模組帶大家建立實戰護欄。",
+        html: `
+          <div class="space-y-8">
+            <div class="p-8 rounded-2xl border surface-card bg-gradient-to-br from-blue-600/10 via-indigo-500/5 to-transparent relative overflow-hidden">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 text-blue-400 text-xs font-semibold mb-4">
+                <span>ENGINEERING ONBOARDING PLAYBOOK</span>
+              </div>
+              <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight mb-4">
+                新手後端工程師實務須知
+              </h2>
+              <p class="text-base md:text-lg text-secondary max-w-3xl leading-relaxed">
+                在開發環境跑得通只是起點。本簡報濃縮團隊知識庫的 <strong>5 大實戰領域</strong>，帶你掌握版本控制紀律、跨職能協作邊界、快取與資料庫高併發陷阱，以及雲端容器化上線守則。
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div onclick="goToSlide(1)" class="cursor-pointer p-4 rounded-xl border surface-card hover:border-blue-500 transition group">
+                <div class="text-xs font-bold text-blue-500 mb-1">MODULE 01</div>
+                <div class="font-bold text-base mb-1.5 group-hover:text-blue-400">Git 版控與救命技</div>
+                <p class="text-xs text-secondary leading-relaxed">Atomic Commit、歷史改寫決策樹、reset 三模式、stash 與 reflog</p>
+              </div>
+              <div onclick="goToSlide(3)" class="cursor-pointer p-4 rounded-xl border surface-card hover:border-emerald-500 transition group">
+                <div class="text-xs font-bold text-emerald-500 mb-1">MODULE 02</div>
+                <div class="font-bold text-base mb-1.5 group-hover:text-emerald-400">跨職能協作守則</div>
+                <p class="text-xs text-secondary leading-relaxed">PM/FE/BE/QA/SRE 邊界、測試左移、Feature Flags 小步快跑</p>
+              </div>
+              <div onclick="goToSlide(5)" class="cursor-pointer p-4 rounded-xl border surface-card hover:border-amber-500 transition group">
+                <div class="text-xs font-bold text-amber-500 mb-1">MODULE 03</div>
+                <div class="font-bold text-base mb-1.5 group-hover:text-amber-400">快取與 Redis 避坑</div>
+                <p class="text-xs text-secondary leading-relaxed">Cache-Aside、穿透/擊穿/雪崩防禦、20MB BigKey + HotKey 災難</p>
+              </div>
+              <div onclick="goToSlide(7)" class="cursor-pointer p-4 rounded-xl border surface-card hover:border-purple-500 transition group">
+                <div class="text-xs font-bold text-purple-500 mb-1">MODULE 04</div>
+                <div class="font-bold text-base mb-1.5 group-hover:text-purple-400">PostgreSQL 與 Outbox</div>
+                <p class="text-xs text-secondary leading-relaxed">型別與 Partial Index 鐵則、雙寫問題、MVCC 退化與分區表</p>
+              </div>
+              <div onclick="goToSlide(9)" class="cursor-pointer p-4 rounded-xl border surface-card hover:border-cyan-500 transition group">
+                <div class="text-xs font-bold text-cyan-500 mb-1">MODULE 05</div>
+                <div class="font-bold text-base mb-1.5 group-hover:text-cyan-400">K8s 容器化上線</div>
+                <p class="text-xs text-secondary leading-relaxed">Service vs Ingress vs Gateway、雙探針 Probes 與防壞鄰居 OOM</p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 2,
+        module: "Module 01 · Git 版控實戰",
+        title: "Git 核心紀律：Atomic Commit 與緊急插單應對",
+        subtitle: "讓每個 Commit 具備獨立性，隨時可搬移、隨時可安全退版",
+        wikiRef: "[[tools/git]] | [[playbooks/git-version-control-and-history-management]]",
+        notes: "為什麼我們嚴格要求 Atomic Commit（原子化提交）？因為真實職場上常遇到老闆或 PM 說：『feature 分支那 20 個功能先緩緩，但裡面那個匯出 CSV 的小功能今天先幫我上 main！』如果你把三個半成品跟修 Bug 塞在同一個 Commit，你就只能痛苦地手動貼程式碼；只要保持 Atomic Commit，一行 git cherry-pick 就能完美摘取。",
+        html: `
+          <div class="space-y-6">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-blue-500">Module 01 · Git 版本控制實務</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">Atomic Commit 原則與隕石插單 SOP</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Atomic Commit -->
+              <div class="p-5 rounded-xl border surface-card space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-lg text-blue-400">1. Atomic Commit（原子化提交）</h3>
+                  <span class="text-xs px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 font-semibold">核心紀律</span>
+                </div>
+                <p class="text-sm text-secondary">一個 Commit <strong>只做一件事</strong>（單一職責），且在該節點能獨立編譯與通過測試。嚴禁把「修 A Bug + 順手排版 B 檔 + 寫一半的 C 功能」綁在一起提交。</p>
+                <div class="p-3 rounded-lg muted-box border text-xs space-y-1.5">
+                  <div class="font-semibold text-emerald-400">✅ 實務兩大收益：</div>
+                  <div>• <strong>單點提前釋出</strong>：PM 臨時要把開發分支中的某個小功能先拉上 <code>main</code>，可直接用 <code>git cherry-pick &lt;hash&gt;</code> 無痛複製。</div>
+                  <div>• <strong>精準安全退版</strong>：線上出包時，可單獨對該筆 Commit 執行 <code>git revert</code>，不誤傷其他正常功能。</div>
+                </div>
+              </div>
+
+              <!-- Meteorite Interruption SOP -->
+              <div class="p-5 rounded-xl border surface-card space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-lg text-amber-400">2. 遭遇「隕石插單 / 緊急 Hotfix」SOP</h3>
+                  <span class="text-xs px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-semibold">git stash</span>
+                </div>
+                <p class="text-sm text-secondary">功能改到一半還沒寫完，突然要切回 <code>main</code> 修線上 P0 Bug？<strong>不要湊合產生無意義的 WIP Commit！</strong></p>
+                <pre class="p-3 rounded-lg bg-slate-900 text-slate-100 text-xs overflow-x-auto leading-relaxed"><code># 1. 將當前修改收進暫存倉 (必加 -u 包含新建未追蹤檔案！)
+$ git stash push -u -m "WIP: payment validation"
+
+# 2. 切回主幹修完 Hotfix 後，切回原分支取出並移除暫存
+$ git switch feature/payment
+$ git stash pop   # 若想保留暫存跨多分支套用則用 git stash apply</code></pre>
+              </div>
+            </div>
+
+            <!-- Bottom comparison: switch/restore & gitignore -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="p-4 rounded-xl border muted-box">
+                <h4 class="font-bold text-sm mb-2">💡 現代語法推薦 (Git 2.23+) 與遠端同步</h4>
+                <ul class="text-xs text-secondary space-y-1.5">
+                  <li>• <strong>切換分支</strong>：用 <code>git switch -c feature_1</code> 取代語意混雜的 <code>checkout</code>。</li>
+                  <li>• <strong>丟棄工作區修改</strong>：用 <code>git restore file.php</code>；取消 add 用 <code>git restore --staged</code>。</li>
+                  <li>• <strong>拉取更新</strong>：<code>git pull</code> = <code>fetch</code> + <code>merge</code>；多人協作建議用 <code>git pull --rebase</code> 維持乾淨線性歷史。</li>
+                </ul>
+              </div>
+              <div class="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5">
+                <h4 class="font-bold text-sm text-rose-400 mb-2">⚠️ 版控衛生：.gitignore 常見坑點</h4>
+                <p class="text-xs text-secondary leading-relaxed">
+                  嚴禁將 <code>.env*</code>、<code>*.key</code>、<code>/vendor</code>、<code>/node_modules</code> 推上 Git！<br/>
+                  <strong>坑點</strong>：若檔案已被 Commit 過，事後補寫進 <code>.gitignore</code> 不會生效！必須執行 <code>git rm --cached .env</code> 移除追蹤（若金鑰已外洩請立即至雲端後台撤銷換發）。
+                </p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 3,
+        module: "Module 01 · Git 版控實戰",
+        title: "Git 歷史修改決策樹與救命三劍客",
+        subtitle: "第一鐵則：這筆 Commit 是否已經 Push 到遠端共享分支？",
+        wikiRef: "[[playbooks/git-version-control-and-history-management]] | [[tools/git]]",
+        notes: "新手最常闖的禍，就是在已經 Push 到遠端共享分支後，還在本地用 git reset 或 commit --amend 改寫歷史並強制 Push (--force)，這會讓所有同事的分支瞬間分岔錯亂。記住黃金法則：本地還沒推上去用 reset/amend 整理；已經推上共享分支一律用 git revert 產生反向抵銷 Commit！萬一不小心 reset --hard 刪錯東西，別慌，git reflog 是你的本機時光機。",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-blue-500">Module 01 · Git 歷史紀錄管理</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">改寫歷史 vs 安全退版決策樹</h2>
+            </div>
+
+            <!-- Decision Banner -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/5">
+                <div class="text-xs font-bold text-emerald-400 uppercase mb-1">情境 A：尚未 Push（僅在本地或個人分支）</div>
+                <div class="font-bold text-base mb-2">可自由改寫與收斂歷史</div>
+                <ul class="text-xs text-secondary space-y-1.5">
+                  <li>• <strong>補漏檔案 / 改最後一筆訊息</strong> ➔ <code>git commit --amend</code></li>
+                  <li>• <strong>將最近 N 筆零碎測試 Commit 退回重整</strong> ➔ <code>git reset HEAD~N</code></li>
+                  <li>• <strong>多筆 Commit 合併/排序/刪除</strong> ➔ <code>git rebase -i HEAD~N</code></li>
+                </ul>
+              </div>
+              <div class="p-4 rounded-xl border-2 border-amber-500/40 bg-amber-500/5">
+                <div class="text-xs font-bold text-amber-400 uppercase mb-1">情境 B：已經 Push 到遠端共享分支 (main / develop)</div>
+                <div class="font-bold text-base mb-2">嚴禁改寫歷史！必須使用反向抵銷</div>
+                <ul class="text-xs text-secondary space-y-1.5">
+                  <li>• <strong>退回線上某筆問題 Commit（哪怕是兩個月前）</strong> ➔ <code>git revert &lt;commit-hash&gt;</code></li>
+                  <li>• <strong>原理</strong>：計算反向 Diff 並產生一筆<strong>全新的 Commit</strong> 抵銷變更，完整保留歷史軌跡，安全觸發 CI/CD。</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Reset 3 Modes Table -->
+            <div class="rounded-xl border surface-card overflow-hidden">
+              <div class="px-4 py-2.5 muted-box border-b font-bold text-xs uppercase tracking-wider">
+                git reset HEAD~N 三種模式深度對照表
+              </div>
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 text-secondary">
+                    <th class="p-3">模式參數</th>
+                    <th class="p-3">Staging (暫存區)</th>
+                    <th class="p-3">Working Dir (工作區程式碼)</th>
+                    <th class="p-3">實務最佳適用場景</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tr>
+                    <td class="p-3 font-mono font-bold text-blue-400">--soft</td>
+                    <td class="p-3 text-emerald-400 font-semibold">保留 (處於已 add 狀態)</td>
+                    <td class="p-3 text-emerald-400 font-semibold">保留不變</td>
+                    <td class="p-3 text-secondary"><strong>合併零碎 Commit 首選</strong>：退回後直接 <code>git commit</code> 即可多合一。</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-mono font-bold text-amber-400">--mixed (預設)</td>
+                    <td class="p-3 text-amber-400">清空 (需重新 git add)</td>
+                    <td class="p-3 text-emerald-400 font-semibold">保留不變</td>
+                    <td class="p-3 text-secondary">退回後想重新挑選檔案、拆分成不同 Commit 時使用。</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-mono font-bold text-rose-400">--hard</td>
+                    <td class="p-3 text-rose-400">清空</td>
+                    <td class="p-3 text-rose-400 font-bold">直接抹除所有修改！</td>
+                    <td class="p-3 text-secondary">高危險指令！徹底放棄修改。若誤按請立即用下方 <code>git reflog</code> 救援。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 3 Musketeers -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 rounded-lg border muted-box">
+                <span class="font-mono font-bold text-blue-400">git log --oneline --graph</span>
+                <p class="text-secondary mt-1">在終端機繪製清晰的分支合併線圖。</p>
+              </div>
+              <div class="p-3 rounded-lg border muted-box">
+                <span class="font-mono font-bold text-emerald-400">git reflog (救命時光機)</span>
+                <p class="text-secondary mt-1">紀錄本機所有 HEAD 移動軌跡，誤刪分支或 <code>reset --hard</code> 皆可找回 Hash 還原。</p>
+              </div>
+              <div class="p-3 rounded-lg border muted-box">
+                <span class="font-mono font-bold text-purple-400">git blame &lt;file&gt;</span>
+                <p class="text-secondary mt-1">逐行追查程式碼作者與當下 Commit 訊息，釐清歷史商業邏輯意圖。</p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 4,
+        module: "Module 02 · 跨職能協作",
+        title: "跨職能研發協作：PM、FE、BE、QA 與 SRE 邊界",
+        subtitle: "拒絕踢皮球！用 API 合約精神與「測試左移」打造高品質交付線",
+        wikiRef: "[[playbooks/cross-functional-collaboration-pm-eng-qa]]",
+        notes: "在團隊裡，QA 往往是比 PM 更懂全系統細節與連動關係的人。我們推行『測試左移 (Shift-Left)』，不要等程式寫完才丟給 QA，而是在 PRD 規劃階段就請 QA 一起抓出邏輯漏洞。對後端工程師而言，動工前跟前端敲定 OpenAPI/Swagger 合約，寫完自測 Unit Test，是專業的基本功。",
+        html: `
+          <div class="space-y-6">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-500">Module 02 · 跨職能研發協作</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">五階段品質把關與測試左移 (Shift-Left Testing)</h2>
+            </div>
+
+            <!-- 5 Stages Flow -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div class="p-4 rounded-xl border surface-card relative">
+                <div class="text-xs font-bold text-blue-400 mb-1">STAGE 1 · 需求規劃</div>
+                <div class="font-bold text-sm mb-2">PRD & 測試左移</div>
+                <p class="text-xs text-secondary leading-relaxed">PM 撰寫 PRD；<strong>QA 與工程師在規劃期即介入審閱</strong>，提前抓出跨模組相依性與極端邊界漏洞。</p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card">
+                <div class="text-xs font-bold text-indigo-400 mb-1">STAGE 2 · 規格敲定</div>
+                <div class="font-bold text-sm mb-2">API 合約 (Contract)</div>
+                <p class="text-xs text-secondary leading-relaxed">FE 與 BE 先敲定 <strong>Swagger / OpenAPI</strong>（路徑、參數、JSON 與錯誤碼），前端即可用 Mock 並行開發。</p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card">
+                <div class="text-xs font-bold text-emerald-400 mb-1">STAGE 3 · 實作自測</div>
+                <div class="font-bold text-sm mb-2">Unit Test & Review</div>
+                <p class="text-xs text-secondary leading-relaxed">工程師撰寫商業邏輯與 <strong>Unit Test</strong>，透過同儕 Code Review 把關程式品質與測試覆蓋率。</p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card">
+                <div class="text-xs font-bold text-amber-400 mb-1">STAGE 4 · 整合驗收</div>
+                <div class="font-bold text-sm mb-2">UAT & QA 手動測試</div>
+                <p class="text-xs text-secondary leading-relaxed">PM/設計師做 Use Case Review；QA 展開 <strong>E2E 與極端情境測試</strong>（未登入、權限、跨裝置）。</p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card">
+                <div class="text-xs font-bold text-purple-400 mb-1">STAGE 5 · 上線把關</div>
+                <div class="font-bold text-sm mb-2">自動回歸 & 部署</div>
+                <p class="text-xs text-secondary leading-relaxed">Merge 主幹後，QA 與 SRE 執行<strong>核心流程自動化回歸測試</strong>（登入/結帳），釘上 Git Tag 發版。</p>
+              </div>
+            </div>
+
+            <!-- Checklist Box -->
+            <div class="p-5 rounded-xl border muted-box grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 class="font-bold text-sm text-emerald-400 mb-2">📋 後端交付給 QA / 前端的自檢清單</h3>
+                <ul class="text-xs text-secondary space-y-2">
+                  <li>✅ <strong>正常 / 極端 / 錯誤情境</strong>：空陣列、負數、超長字串、重複點擊（Idempotency）是否已處理？</li>
+                  <li>✅ <strong>身分與權限狀態</strong>：未登入訪客、一般用戶、管理員越權存取是否正確阻擋（401 / 403）？</li>
+                  <li>✅ <strong>舊版相容性</strong>：新欄位或設定開關（Feature Flag）開啟/關閉時，是否影響既有線上模組？</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="font-bold text-sm text-blue-400 mb-2">🤝 建立健康的工程品質文化</h3>
+                <p class="text-xs text-secondary leading-relaxed">
+                  <strong>「上線前被 QA 抓到 Bug 是皆大歡喜！」</strong><br/>
+                  千萬別因為被開 Defect 而氣餒或踢皮球。問題在測試環境被攔截，遠勝於上線後造成客戶扣款失敗、資料損毀或半夜被 On-call 叫醒救火。把每個 Bug 單視為補齊系統邊界思維的學習機會。
+                </p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 5,
+        module: "Module 02 · 跨職能協作",
+        title: "告別大爆炸發版：切小任務 + Feature Flags 小步快跑",
+        subtitle: "為什麼大功能憋三週一次測完會讓工程師與 QA 同時崩潰？",
+        wikiRef: "[[playbooks/cross-functional-collaboration-pm-eng-qa]]",
+        notes: "新手常犯的排程錯誤是：覺得改一行邏輯只要 10 分鐘，為什麼要留兩天給 QA？因為展開 20 種測試組合、錄影重現步驟、修好再重測非常耗時！為了減少來回 (Back-and-forth)，請務必把大功能拆成小 Phase，搭配 Feature Flag（功能開關）先把寫好的部分安全隱藏上線。",
+        html: `
+          <div class="space-y-6">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-500">Module 02 · 敏捷交付與排程實務</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">任務拆解、Feature Flags 與測試 Buffer</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Anti-pattern -->
+              <div class="p-5 rounded-xl border border-rose-500/30 bg-rose-500/5 space-y-3">
+                <div class="text-xs font-bold uppercase text-rose-400">❌ Anti-Pattern：大爆炸式交付 (Big-Bang Delivery)</div>
+                <h3 class="font-bold text-lg">憋 3 週寫完大功能才一次丟給 QA</h3>
+                <ul class="text-xs text-secondary space-y-2 leading-relaxed">
+                  <li>• <strong>PR 動輒 3,000 行</strong>：同事 Code Review 根本看不出隱藏 Bug，且與主幹產生巨量 Merge Conflict。</li>
+                  <li>• <strong>測試山崩土石流</strong>：QA 一次測出 12 個 Bug；工程師慌亂修改後，<strong>「修好 A 卻弄壞了 B」</strong>，陷入無限重測地獄。</li>
+                  <li>• <strong>排程零容錯</strong>：壓在死線前一天才進測試，一有 Bug 全團隊加班延後上線。</li>
+                </ul>
+              </div>
+
+              <!-- Best Practice -->
+              <div class="p-5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-3">
+                <div class="text-xs font-bold uppercase text-emerald-400">✅ Best Practice：小步快跑 + Feature Flags</div>
+                <h3 class="font-bold text-lg">拆成 5 個小任務，測完一個就隱藏上線</h3>
+                <ul class="text-xs text-secondary space-y-2 leading-relaxed">
+                  <li>• <strong>Phase 切分</strong>：將大功能拆成 5 個獨立小任務，單次開發、Review 與 QA 測試範圍極小。</li>
+                  <li>• <strong>Feature Flags (功能開關)</strong>：第 1 個小任務測出 2 個小錯，修完立刻 Merge 並部署上線（<strong>用 Feature Flag 先藏起來不讓用戶看到</strong>）。</li>
+                  <li>• <strong>持續交付且隨時可切回</strong>：全部 Phase 完成後打開 Flag 即正式上線；萬一異常，1 秒關閉 Flag 即可止血！</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Buffer Time Warning -->
+            <div class="p-5 rounded-xl border surface-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div class="space-y-1">
+                <h4 class="font-bold text-base text-amber-400">⏳ 排程鐵則：永遠為測試與修 Bug 預留 Buffer Time</h4>
+                <p class="text-xs text-secondary leading-relaxed">
+                  工程師改一個小邏輯可能只需 30 分鐘，但 QA 需要<strong>「撰寫測項 ➔ 跨環境測試 ➔ 錄製 Bug 重現步驟 (Reproduction Steps) ➔ 工程師拉回修復 ➔ QA 二次驗證與回歸測試」</strong>。估工時請務必將這段來回（Back-and-forth）時間納入 Sprint 規劃！
+                </p>
+              </div>
+              <div class="shrink-0 px-4 py-2 rounded-lg muted-box border text-xs font-mono text-center">
+                開發工時 ≠ 上線工時<br/><span class="text-amber-400 font-bold">+ 30%~50% QA Buffer</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 6,
+        module: "Module 03 · 快取與 Redis",
+        title: "快取設計三大讀寫模式與災難防禦",
+        subtitle: "相差萬倍的速度層級差（ms vs ns），是保護後端資料庫的護城河",
+        wikiRef: "[[concepts/caching-strategies-and-pitfalls]] | [[tools/redis]]",
+        notes: "為什麼我們在 Cache-Aside 寫入資料庫後，是『刪除快取』而不是『更新快取』？試想如果 1 秒內資料被連續修改了 10 次，但這期間根本沒人來讀，如果你用更新快取，你就白白算了 9 次無效的快取寫入！直接刪除快取（Lazy Loading），等真正有人讀的時候再算一次就好。另外，面試與實戰必考的穿透、擊穿、雪崩三大災難一定要分清楚。",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-500">Module 03 · 快取架構設計</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">三大讀寫模式與穿透 / 擊穿 / 雪崩防禦</h2>
+            </div>
+
+            <!-- 3 Read/Write Patterns -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-sm text-blue-400">1. Cache-Aside (最主流)</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-blue-500/15 text-blue-400">讀多寫少</span>
+                </div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  • <strong>讀</strong>：先查 Cache；Miss 則查 DB 並回寫 Cache。<br/>
+                  • <strong>寫</strong>：<strong>先更新 DB，再「刪除」Cache</strong>。<br/>
+                  💡 <em>為何用刪除而非更新？避免連續寫入 10 次卻無讀取時，浪費 9 次無效計算與寫入！</em>
+                </p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-sm text-emerald-400">2. Write-Through (直寫)</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">強一致性</span>
+                </div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  • App 只對 Cache 操作，由 Cache <strong>同步寫入 DB</strong>，兩邊皆成功才回傳。<br/>
+                  • 適合金融交易等高一致性場景，但寫入 Latency 高（Redis 原生不內建）。
+                </p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-sm text-purple-400">3. Write-Back (非同步回寫)</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-purple-500/15 text-purple-400">極致寫入吞吐</span>
+                </div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  • 寫入 Cache 立即回傳成功，背景<strong>非同步批次</strong>寫入 DB。<br/>
+                  • 適合 IoT、監控指標收集；缺點是快取當機未落盤時會遺失資料。
+                </p>
+              </div>
+            </div>
+
+            <!-- 3 Cache Disasters Table -->
+            <div class="rounded-xl border surface-card overflow-hidden">
+              <div class="px-4 py-2.5 muted-box border-b font-bold text-xs uppercase tracking-wider flex justify-between">
+                <span>三大快取災難對照與工程防禦手段</span>
+                <span class="text-secondary font-normal">淘汰策略：TTL / LRU (最近最少用) / LFU (最不常用)</span>
+              </div>
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 text-secondary">
+                    <th class="p-3 w-36">災難名稱</th>
+                    <th class="p-3">觸發原因與現象</th>
+                    <th class="p-3">標準工程防禦思維</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tr>
+                    <td class="p-3 font-bold text-rose-400">快取穿透<br/><span class="font-normal text-secondary">Penetration</span></td>
+                    <td class="p-3 text-secondary">惡意請求查詢<strong>「快取與 DB 都不存在」</strong>的 ID（如 <code>user_id = -1</code>），每次都穿透打到 DB。</td>
+                    <td class="p-3 text-secondary">1. <strong>快取空結果 (Cache Null)</strong> 並設短 TTL (30~60s)。<br/>2. 前置布隆過濾器 (Bloom Filter) 攔截無效 ID。</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-amber-400">快取擊穿<br/><span class="font-normal text-secondary">Breakdown</span></td>
+                    <td class="p-3 text-secondary"><strong>單一超熱門 HotKey 過期瞬間</strong>，萬級併發同時 Miss 並衝向 DB 重建快取。</td>
+                    <td class="p-3 text-secondary">1. <strong>互斥鎖 (Mutex Lock)</strong>：僅允許搶到鎖的 1 個請求查 DB 更新，其餘短暫等待重試。<br/>2. 熱點 Key 設邏輯過期，背景非同步刷新。</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-purple-400">快取雪崩<br/><span class="font-normal text-secondary">Avalanche</span></td>
+                    <td class="p-3 text-secondary"><strong>大量 Key 在同一秒集體過期</strong>（TTL 設一樣），或 Redis 叢集直接當機，全站流量雪崩湧向 DB。</td>
+                    <td class="p-3 text-secondary">1. <strong>TTL 加上隨機抖動 (Jitter)</strong>：<code>ttl = 3600 + random(0, 300)</code>。<br/>2. 部署 Redis Cluster 高可用 + 服務降級限流。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 7,
+        module: "Module 03 · 快取與 Redis",
+        title: "真實事故覆盤：Redis HotKey + 20MB BigKey 連環災難",
+        subtitle: "新加坡商鈦坦科技案例：為什麼用了 Redis Cluster 還是單點爆掉、連帶害 K8s HPA 失靈？",
+        wikiRef: "[[postmortems/2026-11-12-redis-hotkey-bigkey-cluster-failover]] | [[tools/redis]]",
+        notes: "這是一起非常經典的跨元件連鎖故障！團隊原本以為只是 K8s Pod 擴容後降不下來，往下一查發現 Redis Cluster 有一顆 20MB 的設定檔 BigKey，而且所有 Pod 每 5 秒去拉一次（百萬級訪問的 HotKey）。因為 Redis 是單執行緒，每次吐 20MB 直接把網卡跟主執行緒卡死，引發 Master-Slave 無限互踢 Failover！",
+        html: `
+          <div class="space-y-5">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-500">Module 03 · 線上事故覆盤 (Postmortem)</span>
+                <h2 class="text-2xl md:text-3xl font-bold mt-1">HotKey + 20MB BigKey = Double Kill</h2>
+              </div>
+              <span class="px-3 py-1 rounded-full bg-rose-500/15 text-rose-400 text-xs font-bold shrink-0">Titansoft 實戰案例</span>
+            </div>
+
+            <!-- Domino Chain -->
+            <div class="p-4 rounded-xl border surface-card">
+              <div class="text-xs font-bold uppercase text-secondary mb-3">事故連鎖效應還原 (Domino Effect)</div>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                <div class="p-3 rounded-lg muted-box border border-rose-500/30">
+                  <div class="font-bold text-rose-400 mb-1">1. 致命設計缺陷</div>
+                  <p class="text-secondary">單一固定名稱設定 Key 高達 <strong>20MB (BigKey)</strong>，且所有 Client Pod 每 5 秒排程拉取一次 <strong>(HotKey, LFU=255)</strong>。</p>
+                </div>
+                <div class="p-3 rounded-lg muted-box border border-amber-500/30">
+                  <div class="font-bold text-amber-400 mb-1">2. Cluster 單點塞爆</div>
+                  <p class="text-secondary">固定 Key 的 CRC16 Hash 永遠落在<strong>同一台 Master Node</strong>，網卡 Output 頻寬被打爆並觸發 OOM 逐出其他正常 Key。</p>
+                </div>
+                <div class="p-3 rounded-lg muted-box border border-purple-500/30">
+                  <div class="font-bold text-purple-400 mb-1">3. 單執行緒卡死 Failover</div>
+                  <p class="text-secondary">Redis 單執行緒忙於傳輸 20MB 導致後續命令超時、心跳斷連，觸發 <strong>Master-Slave 反覆互踢 Failover</strong>。</p>
+                </div>
+                <div class="p-3 rounded-lg muted-box border border-blue-500/30">
+                  <div class="font-bold text-blue-400 mb-1">4. K8s HPA 縮容卡死</div>
+                  <p class="text-secondary">Client 每 5 秒反序列化 20MB JSON 導致 <strong>Pod CPU 忽高忽低</strong>，HPA 擴容到頂後永遠無法 Scale-down！</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detection & Resolution -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <h3 class="font-bold text-sm text-amber-400">🔍 如何用內建 CLI 揪出元兇與量化基準</h3>
+                <pre class="p-2.5 rounded bg-slate-900 text-slate-100 text-xs overflow-x-auto"><code># 掃描熱點 (需啟用 allkeys-lfu，8-bit Counter 255 ≈ 百萬次訪問)
+$ redis-cli -h &lt;host&gt; -a &lt;pass&gt; --hotkeys
+
+# 掃描大鍵值 (String > 5MB 或 List/Hash/ZSET > 10,000 成員即警戒)
+$ redis-cli -h &lt;host&gt; -a &lt;pass&gt; --bigkeys</code></pre>
+                <p class="text-xs text-rose-400 font-medium">
+                  ⚠️ 維運鐵則：手動用 Redis-Insight 搬移 Slot 隔離時，<strong>千萬不可把 Master 的 Slot 搬空（剩 0 個）</strong>，否則該 Master 會自動降級變成 Slave！
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <h3 class="font-bold text-sm text-emerald-400">🛠️ 短期止血 vs 長期根治方案</h3>
+                <ul class="text-xs text-secondary space-y-1.5 leading-relaxed">
+                  <li>• <strong>短期止血 (Workaround)</strong>：將 Client 輪詢從 5 秒改為 1 分鐘；將該 Node 其他正常 Slot 搬走，獨留 BigKey 專職隔離；擴充 Cluster 節點分散浮動 Key。</li>
+                  <li>• <strong>長期根治 (Root Fix)</strong>：<strong>修改程式將 20MB 的 BigKey 拆分為多個小 Key</strong>，讓流量與記憶體均勻分散至各節點。</li>
+                  <li>• <strong>刪除注意</strong>：刪除大 Key 務必用非同步 <code>UNLINK</code> 取代阻塞式的 <code>DEL</code>。</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 8,
+        module: "Module 04 · PostgreSQL 與 Outbox",
+        title: "PostgreSQL Schema 型別鐵則與 Partial Index 調優",
+        subtitle: "別讓 INT4 主鍵溢位與錯誤的 B-Tree 索引成為未爆彈",
+        wikiRef: "[[tools/postgresql]] | [[sources/2026-11-12-postgresql-outbox-pattern-revamped]]",
+        notes: "在設計 PostgreSQL 資料表時，有三個新手最常踩的型別與索引地雷：第一是主鍵用 INT4 (integer)，上限只有 21 億筆，高頻表一旦爆掉全站寫入當機；第二是無腦用 JSONB，卻不知道 JSONB 遇到 \\x00 空字元會直接報錯拒絕寫入；第三是寫 WHERE published_at IS NULL ORDER BY id 時，竟然把索引建在 published_at 欄位上！",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-purple-500">Module 04 · PostgreSQL 實務規範</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">高併發 Schema 型別鐵則與 Partial Index</h2>
+            </div>
+
+            <!-- 3 Data Type Rules -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <div class="text-xs font-bold text-blue-400">鐵則 1 · 主鍵與序號</div>
+                <div class="font-bold text-sm">必用 <code>INT8</code> (<code>bigint</code>)</div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  嚴禁對事件表或交易表使用 <code>INT4</code>（上限僅 21.4 億筆，耗盡會直接導致線上寫入全面當機）。<br/>
+                  語法：<code>id INT8 GENERATED ALWAYS AS IDENTITY</code>
+                </p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <div class="text-xs font-bold text-emerald-400">鐵則 2 · 時間戳記</div>
+                <div class="font-bold text-sm">必用 <code>TIMESTAMPTZ</code></div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  永遠使用包含時區資訊的 <code>TIMESTAMPTZ</code>，切勿使用無時區的 <code>TIMESTAMP</code>，避免跨時區容器與微服務時間比對錯亂。
+                </p>
+              </div>
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <div class="text-xs font-bold text-amber-400">鐵則 3 · JSON vs JSONB</div>
+                <div class="font-bold text-sm">純轉發Payload 用 <code>JSON</code></div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  <code>JSONB</code> 雖可建內部索引，但寫入解析較慢，且<strong>嚴格禁止 <code>\x00</code> (Unicode NULL 字元)</strong>，遇到會直接拋出 Syntax Error 中斷交易！
+                </p>
+              </div>
+            </div>
+
+            <!-- Partial Index Comparison -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2">
+                <div class="text-xs font-bold text-emerald-400 uppercase">✅ 正確的 Partial Index (部分索引)</div>
+                <p class="text-xs text-secondary">針對輪詢查詢：<code>SELECT * FROM outbox WHERE published_at IS NULL ORDER BY id LIMIT 10;</code></p>
+                <pre class="p-3 rounded bg-slate-900 text-emerald-300 text-xs overflow-x-auto"><code>-- 索引欄位是排序用的 (id)，過濾條件是 WHERE published_at IS NULL
+CREATE INDEX idx_outbox_unpublished ON outbox (id)
+WHERE published_at IS NULL;</code></pre>
+                <p class="text-xs text-secondary">只將「尚未發送」的極少數活躍資料納入 B-Tree，大幅縮小索引體積並直接滿足 <code>ORDER BY id</code>。</p>
+              </div>
+
+              <div class="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5 space-y-2">
+                <div class="text-xs font-bold text-rose-400 uppercase">❌ 常見的兩大錯誤索引 Anti-Patterns</div>
+                <pre class="p-3 rounded bg-slate-900 text-rose-300 text-xs overflow-x-auto"><code>-- ❌ 誤區 1：把索引建在 published_at 欄位上
+CREATE INDEX idx_bad ON outbox (published_at) WHERE published_at IS NULL;
+-- 後果：B-Tree 裡裝滿一模一樣的 NULL，完全無法幫 id 排序！
+
+-- ❌ 誤區 2：不建部分索引，直接靠主鍵 outbox_pkey
+-- 後果：必須掃描並 Filter 過濾掉數百萬筆已發送歷史紀錄！</code></pre>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 9,
+        module: "Module 04 · PostgreSQL 與 Outbox",
+        title: "Transactional Outbox Pattern 與分區表革新架構",
+        subtitle: "解決微服務 Dual-Write 問題，並用 List Partitioning 根治 18.5 秒 Heap Fetch 雪崩",
+        wikiRef: "[[concepts/transactional-outbox-pattern]] | [[tools/postgresql]]",
+        notes: "這頁是高併發後端的精華！第一：為什麼不能用 ORDER BY created_at？因為不同 Pod 的時鐘有毫秒級偏差 (Clock Drift)，會導致訊息亂序。第二：為什麼建了 Partial Index 在高併發下還是會從 0.13ms 退化到 18.5 秒？因為 Postgres 的索引沒有存交易可見性，大量更新產生 Dead Tuples 時，Index Only Scan 被迫回表 (Heap Fetch) 檢查近億筆資料！最終解法是用 PARTITION BY LIST 把未發送跟已發送拆成兩個分區表。",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-purple-500">Module 04 · 分散式交易一致性與高併發調優</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">Outbox Pattern 六大事故防禦與 List Partitioning</h2>
+            </div>
+
+            <!-- Dual Write & Polling Rules -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div class="p-3.5 rounded-xl border surface-card">
+                <div class="font-bold text-blue-400 mb-1">1. 解決雙寫不一致 (Dual-Write)</div>
+                <p class="text-secondary leading-relaxed">將業務資料與要發往 Kafka/MQ 的事件放在<strong>同一個本地 DB Transaction</strong> 寫入 <code>outbox</code> 表，再由背景 Worker 非同步撈取發送。</p>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card">
+                <div class="font-bold text-amber-400 mb-1">2. 嚴禁 ORDER BY created_at</div>
+                <p class="text-secondary leading-relaxed">多 Pod 本地時鐘存在毫秒級 <strong>Clock Drift</strong>，按時間排序會造成事件亂序！必須按單調遞增的 <code>ORDER BY id</code> 排序。</p>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card">
+                <div class="font-bold text-emerald-400 mb-1">3. 批次限制與 Poison Pill 隔離</div>
+                <p class="text-secondary leading-relaxed">每次抓取 <strong>~100 筆 (絕不超過 1,000)</strong> 避免長交易卡死 Vacuum；依 <code>user_id</code> 分組 Try-Catch 隔離毒丸訊息。</p>
+              </div>
+            </div>
+
+            <!-- MVCC Heap Fetch Disaster vs Partitioning Fix -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5 space-y-2">
+                <div class="text-xs font-bold text-rose-400 uppercase">💥 隱藏災難：高併發下 Index Only Scan 退化 10 萬倍</div>
+                <p class="text-xs text-secondary leading-relaxed">
+                  當每秒高速 Insert 與 Update (<code>published_at = NOW()</code>) 同時進行時，索引累積大量 Dead Tuples，且 <code>autovacuum</code> 來不及更新 <strong>Visibility Map (VM)</strong>。<br/>
+                  導致 <code>Index Only Scan</code> 被迫回表執行 <strong>9,663 萬次 Heap Fetches</strong>，耗時從 <strong>0.13 ms 暴增至 18,553 ms (18.5秒)</strong>！
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2">
+                <div class="text-xs font-bold text-emerald-400 uppercase">🚀 終極解法：PARTITION BY LIST (published_at)</div>
+                <pre class="p-2.5 rounded bg-slate-900 text-slate-100 text-xs overflow-x-auto"><code>CREATE TABLE outbox (...) PARTITION BY LIST (published_at);
+CREATE TABLE outbox_unpublished PARTITION OF outbox FOR VALUES IN (NULL);
+CREATE TABLE outbox_published   PARTITION OF outbox DEFAULT; -- 不建索引！
+
+-- ⚠️ UPDATE 時 WHERE 必帶分區鍵以觸發 Partition Pruning！
+UPDATE outbox SET published_at = NOW()
+WHERE id IN (...) AND published_at IS NULL;</code></pre>
+                <p class="text-xs text-secondary">更新後自動從未發送分區移至已發送分區，查詢穩定 <strong>1~3 ms</strong>，歷史資料可直接 <code>TRUNCATE outbox_published</code> 瞬間清空！</p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 10,
+        module: "Module 05 · K8s 容器化上線",
+        title: "容器編排選型與 K8s 網路拓撲：Service vs Ingress vs Gateway",
+        subtitle: "容器是隨時會死掉重建的消耗品（Cattle, not Pets），絕不在設定檔寫死 IP",
+        wikiRef: "[[tools/kubernetes]] | [[comparisons/container-orchestration-compose-vs-swarm-vs-k8s]] | [[comparisons/ingress-vs-api-gateway]]",
+        notes: "當我們從本地開發的 Docker Compose 走向正式環境，為什麼需要 K8s？因為單機沒有跨節點高可用。進到 K8s 後，請分清楚三種網路角色：叢集內微服務互叫（東西向）走 Service ClusterIP；外部流量進叢集（南北向）先走 Ingress 做 SSL 解密與路徑分流，再進到業務層的 API Gateway 做 JWT 驗證與限流。",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-cyan-500">Module 05 · 雲端原生與容器編排</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">編排工具選型與 K8s 東西向 / 南北向網路架構</h2>
+            </div>
+
+            <!-- Orchestration Trio -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div class="p-3.5 rounded-xl border surface-card">
+                <div class="font-bold text-sm mb-1">1. Docker Compose</div>
+                <div class="text-blue-400 font-semibold mb-1">本地開發與單機標準化</div>
+                <p class="text-secondary">配置最簡單（數十行 YAML），但<strong>侷限單一機器無跨節點高可用</strong>，機器掛了服務全斷。</p>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card">
+                <div class="font-bold text-sm mb-1">2. Docker Swarm</div>
+                <div class="text-emerald-400 font-semibold mb-1">無專職 SRE 的中小型專案</div>
+                <p class="text-secondary">Docker 內建輕量級叢集，相容 Compose 語法；但生態系萎縮，缺乏細緻網路與儲存管控。</p>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card">
+                <div class="font-bold text-sm mb-1">3. Kubernetes (K8s)</div>
+                <div class="text-purple-400 font-semibold mb-1">公有雲業界標準 (EKS / GKE)</div>
+                <p class="text-secondary">宣告式期望狀態 (Desired State)，Scheduler 透過<strong>過濾 ➔ 評分 ➔ 綁定</strong>自動調度。建議優先用雲端代管服務。</p>
+              </div>
+            </div>
+
+            <!-- Networking Diagram & Ingress vs Gateway -->
+            <div class="p-5 rounded-xl border surface-card space-y-4">
+              <h3 class="font-bold text-sm text-cyan-400">🌐 流量路由全貌：為什麼 Ingress 與 API Gateway 常串聯共存？</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="p-3.5 rounded-lg muted-box border">
+                  <div class="font-bold text-amber-400 mb-1">南北向入口 1：K8s Ingress</div>
+                  <div class="text-secondary font-medium mb-1">【基礎設施層 · SRE 維護】</div>
+                  <p class="text-secondary leading-relaxed">全叢集共用一個外部 Cloud LB（省錢！），集中處理 <strong>SSL/TLS 憑證卸載 (SSL Offloading)</strong> 與基礎 L7 網域/路徑轉發。</p>
+                </div>
+                <div class="p-3.5 rounded-lg muted-box border">
+                  <div class="font-bold text-purple-400 mb-1">南北向入口 2：API Gateway</div>
+                  <div class="text-secondary font-medium mb-1">【業務應用層 · 後端維護】</div>
+                  <p class="text-secondary leading-relaxed">承接 Ingress 轉入的 <code>/api/*</code> 流量，負責 <strong>JWT/OAuth 權限驗證、依用戶等級限流 (Rate Limiting)、協議轉換與計費</strong>。</p>
+                </div>
+                <div class="p-3.5 rounded-lg muted-box border">
+                  <div class="font-bold text-emerald-400 mb-1">東西向互叫：K8s Service</div>
+                  <div class="text-secondary font-medium mb-1">【叢集內部 DNS + 負載平衡】</div>
+                  <p class="text-secondary leading-relaxed">容器重生 IP 會變，故透過固定 <strong>ClusterIP 與內部域名</strong>（如 <code>http://order-service:8080</code>）自動 Round-Robin 分流給健康 Pod。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 11,
+        module: "Module 05 · K8s 容器化上線",
+        title: "K8s 韌性上線守則：雙探針、防壞鄰居 OOM 與零信任資安",
+        subtitle: "後端服務上 K8s 前必備的 4 道生產環境安全閥",
+        wikiRef: "[[tools/kubernetes]] | [[sources/2026-11-12-container-orchestration-k8s-johnliu]]",
+        notes: "後端工程師寫完 API 要部署上 K8s 時，最常漏掉兩件事：第一是沒配 Readiness Probe，結果每次 Rolling Update 發版時，新容器還在連 DB 熱機，K8s 就把流量灌進來，造成用戶瞬間收到一堆 502 錯誤！第二是沒設 Memory Limits，一旦某個服務 Memory Leak，就會觸發壞鄰居效應 (Noisy Neighbor)，把同台機器上的其他正常服務一起害死。",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-cyan-500">Module 05 · 容器韌性與資安配置</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">雙探針 (Probes)、資源限制與 Workload Identity</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Probes -->
+              <div class="p-4 rounded-xl border surface-card space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-base text-emerald-400">1. 健康檢查雙探針 (Liveness vs Readiness)</h3>
+                  <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">零停機發版關鍵</span>
+                </div>
+                <div class="p-3 rounded-lg muted-box border text-xs space-y-2">
+                  <div>
+                    <span class="font-bold text-rose-400">• Liveness Probe (你還活著嗎？)</span>：檢查程式是否 Deadlock 卡死。失敗時 ➔ <strong>K8s 直接殺掉容器重啟</strong>。
+                  </div>
+                  <div>
+                    <span class="font-bold text-blue-400">• Readiness Probe (你準備好接客了嗎？)</span>：容器剛啟動正在建 DB 連線池或預熱快取。失敗時 ➔ <strong>不殺容器，暫時從 Service 負載平衡名單剔除</strong>，直到回應 200 OK 才導流（避免滾動更新時冷啟動被打爆）。
+                  </div>
+                </div>
+              </div>
+
+              <!-- Noisy Neighbor -->
+              <div class="p-4 rounded-xl border surface-card space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-base text-amber-400">2. 防範「壞鄰居效應 (Noisy Neighbor)」</h3>
+                  <span class="text-xs px-2 py-0.5 rounded bg-amber-500/15 text-amber-400">Requests & Limits</span>
+                </div>
+                <div class="p-3 rounded-lg muted-box border text-xs space-y-2">
+                  <div>
+                    <span class="font-bold text-emerald-400">• Requests (保證下限)</span>：容器至少需要的資源，Scheduler 依此決定放哪台機器。
+                  </div>
+                  <div>
+                    <span class="font-bold text-rose-400">• Limits (硬性天花板)</span>：容器絕對不可超越的上限。若未設定，單一服務 Memory Leak 吃光整台實體機記憶體時，會觸發 OS <strong>OOM Killer 無差別殺死同機其他正常容器！</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Config & Storage -->
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <h3 class="font-bold text-base text-blue-400">3. 設定抽離與持久化儲存 (Twelve-Factor)</h3>
+                <p class="text-xs text-secondary leading-relaxed">
+                  • 同一個 Docker Image 應不需重 Build 即可一路部署至 Dev / Staging / Prod。<br/>
+                  • 非機密放 <code>ConfigMap</code>，密碼金鑰放 <code>Secret</code>。<br/>
+                  • <strong>容器內部磁碟重啟即消失！</strong>需要永久保存的檔案必須掛載 <code>Persistent Volume (PV)</code>。
+                </p>
+              </div>
+
+              <!-- Zero Trust & Workload Identity -->
+              <div class="p-4 rounded-xl border surface-card space-y-2">
+                <h3 class="font-bold text-base text-purple-400">4. 零信任網路與 Workload Identity</h3>
+                <p class="text-xs text-secondary leading-relaxed">
+                  • <strong>NetworkPolicy</strong>：打破預設扁平網路，禁止 <code>frontend</code> Pod 直連 <code>mysql:3306</code>，縮小資安爆炸半徑。<br/>
+                  • <strong>Workload Identity</strong>：<strong>嚴禁將雲端永久有效的 IAM Key 寫死塞進容器！</strong>應綁定 K8s <code>ServiceAccount</code> 動態換取短效期 Token。
+                </p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 12,
+        module: "總結與速查表",
+        title: "新手後端工程師 Top 10 實戰黃金法則",
+        subtitle: "寫在每一次發 PR 與上線部署前的自檢清單 (Takeaway Checklist)",
+        wikiRef: "[[index]] | [[log]]",
+        notes: "最後一頁我們把今天所有模組濃縮成 10 條黃金守則。各位在日常開發遇到細節問題時，都可以隨時打開 Obsidian 查看我們 Wiki 裡的對應專頁，裡面有完整的 SQL 範例、架構圖與排查指令。如果在實務上踩到新的坑，也請隨時回饋給我們的 LLM Wiki 持續累積！",
+        html: `
+          <div class="space-y-5">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-500">Summary & Onboarding Checklist</span>
+              <h2 class="text-2xl md:text-3xl font-bold mt-1">後端工程師 Top 10 實戰黃金守則</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">01</span>
+                <div><strong>保持 Atomic Commit</strong>：一個 Commit 只做一件事，讓 <code>cherry-pick</code> 與 <code>revert</code> 隨時無痛可用。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">02</span>
+                <div><strong>已 Push 分支禁改歷史</strong>：遠端共享分支退版一律用 <code>git revert</code>；緊急插單用 <code>git stash -u</code>。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">03</span>
+                <div><strong>測試左移與 API 合約先行</strong>：在 PRD 階段就請 QA 參與審閱；動工前先與前端敲定 OpenAPI Spec。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">04</span>
+                <div><strong>小步快跑 + Feature Flags</strong>：將大功能拆成小 Phase，測完即包裹 Feature Flag 隱藏上線，預留 QA Buffer。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">05</span>
+                <div><strong>Cache-Aside 寫入用「刪除」</strong>：先更新 DB 再刪除 Cache；為 TTL 加上隨機 Jitter 防雪崩、快取空值防穿透。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">06</span>
+                <div><strong>嚴防 Redis BigKey + HotKey</strong>：單一 Key 勿破數 MB，定期巡檢 <code>--hotkeys</code> / <code>--bigkeys</code>，搬 Slot 勿搬空 Master。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 font-bold">07</span>
+                <div><strong>PostgreSQL 型別三鐵則</strong>：主鍵必用 <code>INT8</code>、時間必用 <code>TIMESTAMPTZ</code>、純轉發 Payload 用 <code>JSON</code> 防 <code>\x00</code> 報錯。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 font-bold">08</span>
+                <div><strong>Outbox 排序與分區裁剪</strong>：必用 <code>ORDER BY id</code> 防時鐘偏移；高吞吐採 <code>PARTITION BY LIST</code> 且更新必帶分區鍵。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold">09</span>
+                <div><strong>K8s 必設雙探針與資源上限</strong>：實作 <code>Liveness / Readiness Probe</code> 防發版斷線，設定 <code>Limits</code> 防壞鄰居 OOM。</div>
+              </div>
+              <div class="p-3.5 rounded-xl border surface-card flex gap-3 items-start">
+                <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold">10</span>
+                <div><strong>擁抱零信任與 Workload Identity</strong>：嚴禁在容器或 Git 塞入雲端永久 IAM 金鑰，全面改用動態短效 Token。</div>
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl muted-box border text-center text-xs text-secondary">
+              📚 本簡報所有細節、SQL 腳本與事故排查軌跡皆已收錄於團隊 <strong>Obsidian LLM Wiki (<code>wiki/index.md</code>)</strong>，歡迎隨時查閱與共同演進！
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    let currentIndex = 0;
+
+    function renderSidebar() {
+      const toc = document.getElementById('toc-list');
+      toc.innerHTML = slides.map((s, idx) => {
+        const active = idx === currentIndex;
+        return `
+          <button onclick="goToSlide(${idx})" class="w-full text-left px-3 py-2 rounded-lg transition flex items-start gap-2.5 ${active ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'hover:bg-slate-200/60 dark:hover:bg-slate-800/70 text-secondary'}">
+            <span class="text-xs font-mono mt-0.5 ${active ? 'text-blue-200' : 'opacity-60'}">${String(idx + 1).padStart(2, '0')}</span>
+            <div class="overflow-hidden">
+              <div class="text-xs truncate ${active ? 'text-white' : ''}">${s.title}</div>
+              <div class="text-[11px] truncate ${active ? 'text-blue-200' : 'opacity-60'}">${s.module}</div>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderSlide() {
+      const s = slides[currentIndex];
+      const container = document.getElementById('slide-container');
+      container.classList.remove('slide-enter');
+      void container.offsetWidth; // trigger reflow
+      container.classList.add('slide-enter');
+      container.innerHTML = s.html;
+
+      document.getElementById('module-badge').textContent = s.module;
+      document.getElementById('slide-counter').textContent = `${currentIndex + 1} / ${slides.length}`;
+      document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / slides.length) * 100}%`;
+
+      document.getElementById('notes-content').textContent = s.notes;
+      document.getElementById('notes-wiki-links').textContent = `Wiki 引用: ${s.wikiRef}`;
+
+      document.getElementById('btn-prev').disabled = currentIndex === 0;
+      document.getElementById('btn-next').disabled = currentIndex === slides.length - 1;
+
+      renderSidebar();
+    }
+
+    function nextSlide() {
+      if (currentIndex < slides.length - 1) {
+        currentIndex++;
+        renderSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderSlide();
+      }
+    }
+
+    function goToSlide(idx) {
+      if (idx >= 0 && idx < slides.length) {
+        currentIndex = idx;
+        renderSlide();
+      }
+    }
+
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('hidden');
+    }
+
+    function toggleNotes() {
+      const drawer = document.getElementById('notes-drawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleNotes();
+      } else if (e.key === 'd' || e.key === 'D') {
+        toggleTheme();
+      } else if (e.key === 't' || e.key === 'T') {
+        toggleSidebar();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key >= '1' && e.key <= '9') {
+        goToSlide(parseInt(e.key, 10) - 1);
+      }
+    });
+
+    renderSlide();
+  </script>
+</body>
+</html>

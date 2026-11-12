@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新手後端與資料工程實務須知 — Graph-Driven Interactive Presentation</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-muted: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #cbd5e1;
+      --graph-bg: #f1f5f9;
+      --edge-color: #94a3b8;
+    }
+    html.dark {
+      --bg-main: #070b14;
+      --bg-surface: #0f172a;
+      --bg-muted: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #1e293b;
+      --graph-bg: #050811;
+      --edge-color: #475569;
+    }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      overflow: hidden;
+    }
+    .surface-card {
+      background-color: var(--bg-surface);
+      border-color: var(--border-color);
+    }
+    .muted-box {
+      background-color: var(--bg-muted);
+      border-color: var(--border-color);
+    }
+    .text-secondary {
+      color: var(--text-muted);
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .slide-enter {
+      animation: fadeZoom 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeZoom {
+      from { opacity: 0; transform: scale(0.985) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    /* Flow connector utilities for Micro-Graphs */
+    .flow-arrow-r::after {
+      content: "→";
+      font-weight: bold;
+      margin: 0 0.35rem;
+      color: #64748b;
+    }
+    .flow-arrow-d {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #64748b;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0.2rem 0;
+    }
+    /* Pulse animation for active node on macro graph */
+    @keyframes pulseRing {
+      0% { r: 22px; opacity: 0.7; }
+      100% { r: 36px; opacity: 0; }
+    }
+    .active-ring {
+      animation: pulseRing 1.8s infinite ease-out;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 3px; }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col select-none">
+
+  <!-- Top Progress Bar -->
+  <div class="w-full h-1 bg-slate-200 dark:bg-slate-800 shrink-0">
+    <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-500 via-blue-500 via-amber-500 to-emerald-500 transition-all duration-300" style="width: 7.14%"></div>
+  </div>
+
+  <!-- Header Bar -->
+  <header class="h-14 surface-card border-b px-4 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center bg-slate-200/70 dark:bg-slate-800/90 p-1 rounded-lg border border-slate-300/50 dark:border-slate-700">
+        <button id="mode-split" onclick="setViewMode('split')" class="px-2.5 py-1 rounded-md text-xs font-semibold transition bg-blue-600 text-white">
+          雙模式 (圖譜+投影片)
+        </button>
+        <button id="mode-graph" onclick="setViewMode('graph')" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-secondary hover:text-blue-400">
+          全螢幕星系圖譜 (G)
+        </button>
+        <button id="mode-slide" onclick="setViewMode('slide')" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-secondary hover:text-blue-400">
+          專注投影片 (S)
+        </button>
+      </div>
+      <div class="hidden lg:flex items-center gap-2">
+        <span class="font-bold text-sm tracking-tight">新手後端與資料工程實務須知</span>
+        <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 font-mono">14 Nodes · 6 Clusters</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span id="cluster-badge" class="hidden sm:inline-block text-xs font-bold px-2.5 py-1 rounded-md border"></span>
+      <button onclick="toggleNotes()" class="px-3 py-1.5 text-xs font-medium rounded-lg border surface-card hover:border-amber-500 transition flex items-center gap-1.5" title="講者備忘錄與檢查點 (N)">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span>講者備忘錄 (N)</span>
+      </button>
+      <button onclick="toggleTheme()" class="p-2 rounded-lg border surface-card hover:border-blue-500 transition" title="切換深淺色主題 (D)">
+        <svg class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg class="w-4 h-4 block dark:hidden text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Split Container -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- LEFT / MACRO-GRAPH PANEL (Interactive Knowledge Graph Map) -->
+    <section id="macro-graph-panel" class="w-2/5 border-r border-slate-200 dark:border-slate-800 flex flex-col relative transition-all duration-300" style="background-color: var(--graph-bg);">
+      <!-- Graph Legend & Controls Overlay -->
+      <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
+        <div class="px-3 py-1.5 rounded-lg surface-card border text-xs shadow-sm pointer-events-auto flex flex-wrap items-center gap-2.5">
+          <span class="font-bold text-secondary">Macro-Graph 知識星系：</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>協作/Git</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>K8s/Infra</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>快取/事故</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>DB/Outbox</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>Data湖倉</span>
+        </div>
+      </div>
+
+      <!-- Interactive SVG Graph -->
+      <div class="flex-1 w-full h-full flex items-center justify-center overflow-hidden p-2">
+        <svg id="macro-svg" viewBox="0 0 920 680" class="w-full h-full max-h-full select-none">
+          <defs>
+            <marker id="arrow-normal" viewBox="0 0 10 10" refX="25" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+            </marker>
+            <marker id="arrow-cross" viewBox="0 0 10 10" refX="25" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="25" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b82f6" />
+            </marker>
+          </defs>
+
+          <!-- Cluster Background Regions -->
+          <g opacity="0.14">
+            <rect x="20" y="30" width="420" height="270" rx="20" fill="#a855f7" stroke="#a855f7" stroke-width="2" stroke-dasharray="6,6"/>
+            <text x="35" y="55" fill="#c084fc" font-size="13" font-weight="bold">Cluster A: 跨職能協作與 Git 版控 (Workflow)</text>
+
+            <rect x="470" y="30" width="430" height="270" rx="20" fill="#06b6d4" stroke="#06b6d4" stroke-width="2" stroke-dasharray="6,6"/>
+            <text x="485" y="55" fill="#22d3ee" font-size="13" font-weight="bold">Cluster B: 容器編排與 K8s 韌性 (Infra)</text>
+
+            <rect x="20" y="330" width="420" height="320" rx="20" fill="#f59e0b" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,6"/>
+            <text x="35" y="355" fill="#fbbf24" font-size="13" font-weight="bold">Cluster C: 快取策略與線上事故 (Cache & Troubleshooting)</text>
+
+            <rect x="470" y="330" width="430" height="195" rx="20" fill="#10b981" stroke="#10b981" stroke-width="2" stroke-dasharray="6,6"/>
+            <text x="485" y="355" fill="#34d399" font-size="13" font-weight="bold">Cluster D: PostgreSQL 與 Outbox 交易 (Database)</text>
+
+            <rect x="470" y="540" width="430" height="110" rx="20" fill="#eab308" stroke="#eab308" stroke-width="2" stroke-dasharray="6,6"/>
+            <text x="485" y="565" fill="#facc15" font-size="13" font-weight="bold">Cluster E: 資料湖倉管線 (Data Engineering)</text>
+          </g>
+
+          <!-- Edges Container -->
+          <g id="graph-edges"></g>
+          <!-- Nodes Container -->
+          <g id="graph-nodes"></g>
+        </svg>
+      </div>
+
+      <!-- Graph Bottom Tip -->
+      <div class="px-4 py-2 surface-card border-t text-xs text-secondary flex items-center justify-between">
+        <span>💡 點擊任一節點可直接跳轉聚焦；紅虛線代表<strong>跨領域因果連動</strong></span>
+        <span id="graph-active-label" class="font-mono text-blue-400 font-semibold"></span>
+      </div>
+    </section>
+
+    <!-- RIGHT / MICRO-GRAPH SLIDE STAGE -->
+    <main id="slide-panel" class="w-3/5 flex flex-col overflow-hidden relative transition-all duration-300">
+      <!-- Slide Content Stage -->
+      <div class="flex-1 overflow-y-auto p-5 md:p-8 flex flex-col justify-between select-text">
+        <div id="slide-container" class="w-full max-w-4xl mx-auto my-auto slide-enter"></div>
+
+        <!-- Connected Graph Nodes Navigation Bar (Bottom of Slide) -->
+        <div class="w-full max-w-4xl mx-auto mt-6 pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-secondary font-semibold">🔗 圖譜相鄰節點跳轉：</span>
+            <div id="connected-nodes-bar" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <span id="wiki-source-badge" class="font-mono text-secondary"></span>
+        </div>
+      </div>
+
+      <!-- Speaker Notes & Quality Checkpoint Drawer -->
+      <div id="notes-drawer" class="hidden surface-card border-t-2 border-amber-500/50 px-6 py-3.5 max-h-48 overflow-y-auto shrink-0 shadow-xl">
+        <div class="max-w-4xl mx-auto space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">講者口語備忘錄 & Graph 視覺檢查點</span>
+            <button onclick="toggleNotes()" class="text-xs text-secondary hover:underline">關閉 (N)</button>
+          </div>
+          <p id="notes-text" class="text-xs md:text-sm leading-relaxed text-secondary select-text"></p>
+        </div>
+      </div>
+
+      <!-- Footer Navigation Controls -->
+      <footer class="h-12 surface-card border-t px-6 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-secondary">Guided Path 主線進度：</span>
+          <span id="slide-counter" class="font-bold text-sm text-blue-500">N01 (1 / 14)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="prevSlide()" id="btn-prev" class="px-3 py-1.5 rounded-lg border surface-card hover:border-blue-500 disabled:opacity-40 transition text-xs font-medium">
+            ← 上一節點
+          </button>
+          <button onclick="nextSlide()" id="btn-next" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 transition text-xs font-semibold">
+            下一節點 (Guided) →
+          </button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // =========================================================================
+    // STAGE 1 & 2 DATA: 14 MACRO-GRAPH NODES + EDGES + MICRO-GRAPH VISUAL HTML
+    // =========================================================================
+    const nodes = [
+      {
+        id: "N01",
+        index: 0,
+        shortLabel: "全域知識起點",
+        title: "N01 · 後端與資料工程實務全域圖譜",
+        cluster: "Cluster A · 全域總覽",
+        color: "#a855f7",
+        x: 95, y: 115,
+        wiki: "[[index]] | [[AGENTS]]",
+        notes: "【講者提示】這是整座知識庫的入口節點。我們打破傳統條列式簡報，把後端工程師從『接獲需求與版控 (紫)』➔『部署上 K8s 容器 (藍)』➔『設計快取與排查事故 (橘)』➔『操作資料庫與雙寫交易 (綠)』➔『資料流入 Lakehouse (黃)』串成一張完整圖譜。你可以按右下角『下一節點』走主線，或直接點擊左側星系圖任意節點！",
+        html: `
+          <div class="space-y-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Node 01 · Macro-to-Micro Architecture Map</span>
+                <h2 class="text-2xl md:text-3xl font-extrabold mt-0.5">從「寫下一行 Code」到「資料進入湖倉」的全鏈路圖譜</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 text-xs font-bold">Micro-Graph: 系統生命週期拓撲</span>
+            </div>
+
+            <!-- Micro-Graph 01: End-to-End Lifecycle Architecture Graph -->
+            <div class="p-5 rounded-2xl border surface-card space-y-4">
+              <div class="text-xs font-bold text-secondary uppercase">一筆功能交付與線上請求的 5 大階段流向 (點擊區塊可直接跳轉該群集)</div>
+
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-2.5 items-stretch text-xs">
+                <!-- Stage 1 -->
+                <div onclick="goToSlide(1)" class="cursor-pointer p-3.5 rounded-xl border-2 border-purple-500/40 bg-purple-500/10 hover:border-purple-400 transition flex flex-col justify-between">
+                  <div>
+                    <div class="font-mono font-bold text-purple-400">1. WORKFLOW</div>
+                    <div class="font-bold text-sm mt-1 mb-1.5">協作與 Git 版控</div>
+                    <div class="text-secondary leading-snug">PRD 左移測試 ➔ Feature Flag ➔ Atomic Commit</div>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-purple-500/20 font-mono text-[11px] text-purple-300">N02 · N03 · N04 · N05 →</div>
+                </div>
+
+                <!-- Stage 2 -->
+                <div onclick="goToSlide(5)" class="cursor-pointer p-3.5 rounded-xl border-2 border-cyan-500/40 bg-cyan-500/10 hover:border-cyan-400 transition flex flex-col justify-between">
+                  <div>
+                    <div class="font-mono font-bold text-cyan-400">2. INFRA / K8S</div>
+                    <div class="font-bold text-sm mt-1 mb-1.5">容器路由與韌性</div>
+                    <div class="text-secondary leading-snug">Ingress (SSL) ➔ Gateway ➔ Service ➔ 雙探針 & Limits</div>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-cyan-500/20 font-mono text-[11px] text-cyan-300">N06 · N07 · N08 →</div>
+                </div>
+
+                <!-- Stage 3 -->
+                <div onclick="goToSlide(8)" class="cursor-pointer p-3.5 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 hover:border-amber-400 transition flex flex-col justify-between">
+                  <div>
+                    <div class="font-mono font-bold text-amber-400">3. CACHE / REDIS</div>
+                    <div class="font-bold text-sm mt-1 mb-1.5">快取加速與災難</div>
+                    <div class="text-secondary leading-snug">Cache-Aside ➔ 防穿透/擊穿/雪崩 ➔ 禁 20MB BigKey</div>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-amber-500/20 font-mono text-[11px] text-amber-300">N09 · N10 · N11 →</div>
+                </div>
+
+                <!-- Stage 4 -->
+                <div onclick="goToSlide(11)" class="cursor-pointer p-3.5 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 hover:border-emerald-400 transition flex flex-col justify-between">
+                  <div>
+                    <div class="font-mono font-bold text-emerald-400">4. DATABASE</div>
+                    <div class="font-bold text-sm mt-1 mb-1.5">PG 調優與雙寫</div>
+                    <div class="text-secondary leading-snug">INT8 / Partial Index ➔ Outbox Pattern ➔ 分區表</div>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-emerald-500/20 font-mono text-[11px] text-emerald-300">N12 · N13 →</div>
+                </div>
+
+                <!-- Stage 5 -->
+                <div onclick="goToSlide(13)" class="cursor-pointer p-3.5 rounded-xl border-2 border-yellow-500/40 bg-yellow-500/10 hover:border-yellow-400 transition flex flex-col justify-between">
+                  <div>
+                    <div class="font-mono font-bold text-yellow-400">5. DATA ENG</div>
+                    <div class="font-bold text-sm mt-1 mb-1.5">Medallion 湖倉</div>
+                    <div class="text-secondary leading-snug">Kafka 事件 ➔ Bronze (原貌) ➔ Silver ➔ Gold 報表</div>
+                  </div>
+                  <div class="mt-3 pt-2 border-t border-yellow-500/20 font-mono text-[11px] text-yellow-300">N14 →</div>
+                </div>
+              </div>
+
+              <!-- Cross-Domain Highlight Graph -->
+              <div class="p-3.5 rounded-xl muted-box border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 font-bold">跨領域因果連線</span>
+                  <span class="text-secondary">為什麼要用 Graph 看後端？因為 <strong>N11 (Redis 20MB BigKey)</strong> 會透過網路阻塞直接打壞 <strong>N08 (K8s HPA 縮容)</strong>！</span>
+                </div>
+                <button onclick="goToSlide(10)" class="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-semibold shrink-0 transition">
+                  直接看 N11 事故骨牌圖 →
+                </button>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N02",
+        index: 1,
+        shortLabel: "跨職能與測試左移",
+        title: "N02 · 跨職能協作泳道圖與「測試左移 (Shift-Left)」",
+        cluster: "Cluster A · 跨職能協作",
+        color: "#a855f7",
+        x: 235, y: 100,
+        wiki: "[[playbooks/cross-functional-collaboration-pm-eng-qa]]",
+        notes: "【講者提示】這張泳道圖 (Swimlane Graph) 清楚畫出 PM、FE/BE、QA、SRE 在五個階段的交互節點。請特別強調『Stage 1 的紅色箭頭（測試左移）』：QA 熟悉全系統模組，讓 QA 在 PRD 階段就進來審閱，能消滅 50% 以上的跨模組連動 Bug！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Node 02 · Cross-Functional Workflow Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">五角色研發泳道圖與「測試左移 (Shift-Left)」</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 text-xs font-bold">Micro-Graph: 跨職能 RACI 泳道圖</span>
+            </div>
+
+            <!-- Swimlane Visual Graph -->
+            <div class="p-4 rounded-2xl border surface-card space-y-2.5 text-xs">
+              <!-- Header Columns -->
+              <div class="grid grid-cols-5 gap-2 text-center font-bold py-1.5 rounded-lg muted-box border">
+                <div class="text-blue-400">1. PRD 規劃期</div>
+                <div class="text-indigo-400">2. API 合約期</div>
+                <div class="text-emerald-400">3. 開發自測期</div>
+                <div class="text-amber-400">4. 整合測試期</div>
+                <div class="text-purple-400">5. 回歸發版期</div>
+              </div>
+
+              <!-- Row 1: PM & Design -->
+              <div class="grid grid-cols-5 gap-2 items-stretch">
+                <div class="p-2.5 rounded-lg border border-blue-500/40 bg-blue-500/10">
+                  <div class="font-bold text-blue-400">PM 主導 PRD</div>
+                  <div class="text-secondary mt-0.5">定義商業邏輯 + 交付測試維度清單</div>
+                </div>
+                <div class="p-2.5 rounded-lg border muted-box flex items-center justify-center text-secondary">確認 UI/UX 流程</div>
+                <div class="p-2.5 rounded-lg border muted-box flex items-center justify-center text-secondary">追蹤進度與解惑</div>
+                <div class="p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10">
+                  <div class="font-bold text-amber-400">Use Case Review</div>
+                  <div class="text-secondary mt-0.5">PM/設計師對照 Mockup 驗收 (UAT)</div>
+                </div>
+                <div class="p-2.5 rounded-lg border muted-box flex items-center justify-center text-secondary">決定開啟 Flag</div>
+              </div>
+
+              <!-- Row 2: FE / BE Engineers -->
+              <div class="grid grid-cols-5 gap-2 items-stretch">
+                <div class="p-2.5 rounded-lg border muted-box">
+                  <div class="font-semibold">評估可行性</div>
+                  <div class="text-secondary mt-0.5">將大功能切分為多個小 Phase</div>
+                </div>
+                <div class="p-2.5 rounded-lg border-2 border-indigo-500/50 bg-indigo-500/10">
+                  <div class="font-bold text-indigo-400">敲定 API Spec</div>
+                  <div class="text-secondary mt-0.5">Swagger 合約先行 ➔ FE 用 Mock 並行</div>
+                </div>
+                <div class="p-2.5 rounded-lg border-2 border-emerald-500/50 bg-emerald-500/10">
+                  <div class="font-bold text-emerald-400">Unit Test + PR</div>
+                  <div class="text-secondary mt-0.5">Atomic Commit + 同儕 Code Review</div>
+                </div>
+                <div class="p-2.5 rounded-lg border muted-box">
+                  <div class="font-semibold">修復 Defect</div>
+                  <div class="text-secondary mt-0.5">依據重現步驟修正並補充測試</div>
+                </div>
+                <div class="p-2.5 rounded-lg border muted-box">
+                  <div class="font-semibold">Git Tag vX.Y.Z</div>
+                  <div class="text-secondary mt-0.5">錨定正式版號</div>
+                </div>
+              </div>
+
+              <!-- Row 3: QA & SRE -->
+              <div class="grid grid-cols-5 gap-2 items-stretch">
+                <div class="p-2.5 rounded-lg border-2 border-rose-500 bg-rose-500/15 shadow-sm">
+                  <div class="font-bold text-rose-400">★ QA 測試左移！</div>
+                  <div class="text-secondary mt-0.5">審閱 PRD 抓出跨模組相依性與漏考慮情境</div>
+                </div>
+                <div class="p-2.5 rounded-lg border muted-box">
+                  <div class="font-semibold">展開 Test Cases</div>
+                  <div class="text-secondary mt-0.5">於 TestRail 建立正常/極端測項</div>
+                </div>
+                <div class="p-2.5 rounded-lg border muted-box">
+                  <div class="font-semibold">CI 自動跑測試</div>
+                  <div class="text-secondary mt-0.5">準備 QA 環境與自動化腳本</div>
+                </div>
+                <div class="p-2.5 rounded-lg border-2 border-amber-500/50 bg-amber-500/10">
+                  <div class="font-bold text-amber-400">QA E2E 手動測試</div>
+                  <div class="text-secondary mt-0.5">測極端值、未登入/權限、跨裝置</div>
+                </div>
+                <div class="p-2.5 rounded-lg border-2 border-purple-500/50 bg-purple-500/10">
+                  <div class="font-bold text-purple-400">自動回歸 + SRE</div>
+                  <div class="text-secondary mt-0.5">核心流程 (登入/結帳) 自動回歸測試</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N03",
+        index: 2,
+        shortLabel: "Feature Flag 小步交付",
+        title: "N03 · 交付拓撲對比：大爆炸交付 vs Feature Flags 小步快跑",
+        cluster: "Cluster A · 敏捷交付",
+        color: "#a855f7",
+        x: 375, y: 115,
+        wiki: "[[playbooks/cross-functional-collaboration-pm-eng-qa]]",
+        notes: "【講者提示】這張雙路徑比較圖展示了為什麼『憋大招』必死：上面那條紅色路徑憋了 3 週一次丟出，QA 測出 12 個 Bug，工程師修好 A 卻壞了 B，進入死亡迴圈。下面綠色路徑將功能拆成 5 個小任務，每個任務用 Feature Flag 藏起來先部署上線，負擔極小且隨時可一秒關閉止血。",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Node 03 · Delivery Topology Comparison</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">為什麼要切小任務 + Feature Flags（功能開關）？</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 text-xs font-bold">Micro-Graph: 雙路徑狀態迴圈圖</span>
+            </div>
+
+            <!-- Path A: Big Bang (Anti-pattern) -->
+            <div class="p-4 rounded-xl border-2 border-rose-500/40 bg-rose-500/5 space-y-2.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-rose-400 uppercase">❌ 路徑 A：大爆炸式交付 (Big-Bang Delivery 死亡迴圈)</span>
+                <span class="text-secondary">單次 PR > 3,000 行 · 巨量 Merge Conflict</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center text-xs">
+                <div class="p-3 rounded-lg surface-card border text-center">
+                  <div class="font-bold">閉門開發 3 週</div>
+                  <div class="text-secondary mt-0.5">5 個子功能全部混在同一分支</div>
+                </div>
+                <div class="p-3 rounded-lg surface-card border border-rose-500/40 text-center">
+                  <div class="font-bold text-rose-400">一次丟給 QA 測試</div>
+                  <div class="text-secondary mt-0.5">瞬間爆出 12 個嚴重 Bug！</div>
+                </div>
+                <div class="p-3 rounded-lg surface-card border border-rose-500/40 text-center">
+                  <div class="font-bold text-rose-400">慌亂修改 12 處</div>
+                  <div class="text-secondary mt-0.5">🔄 <strong>修好 A 卻弄壞了 B</strong></div>
+                </div>
+                <div class="p-3 rounded-lg bg-rose-500/20 border border-rose-500 text-center font-bold text-rose-300">
+                  發版無限期延宕<br/><span class="font-normal text-[11px]">團隊陷入 Back-and-forth 地獄</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Path B: Incremental + Feature Flags -->
+            <div class="p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/5 space-y-2.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-emerald-400 uppercase">✅ 路徑 B：切分 5 個小任務 + Feature Flags 持續隱藏交付</span>
+                <span class="text-secondary">預留 +30%~50% QA 測試與修 Bug Buffer Time</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-center text-xs">
+                <div class="p-2.5 rounded-lg surface-card border border-emerald-500/40 text-center">
+                  <div class="font-bold text-emerald-400">Task 1 完成</div>
+                  <div class="text-secondary">QA 測出 2 小錯 ➔ 秒修</div>
+                </div>
+                <div class="p-2.5 rounded-lg surface-card border text-center">
+                  <div class="font-bold text-blue-400">包裹 Feature Flag</div>
+                  <div class="text-secondary"><code>flag=OFF</code> 先部署上線</div>
+                </div>
+                <div class="p-2.5 rounded-lg surface-card border border-emerald-500/40 text-center">
+                  <div class="font-bold text-emerald-400">Task 2 ~ 5 迭代</div>
+                  <div class="text-secondary">小步快跑逐一合入主幹</div>
+                </div>
+                <div class="p-2.5 rounded-lg surface-card border text-center">
+                  <div class="font-bold text-purple-400">全數驗收完畢</div>
+                  <div class="text-secondary">動態切換 <code>flag=ON</code></div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500 text-center font-bold text-emerald-300">
+                  平滑無痛發布！<br/><span class="font-normal text-[11px]">異常時 1 秒關 Flag 止血</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N04",
+        index: 3,
+        shortLabel: "Git Atomic 與 Stash",
+        title: "N04 · Git 分支操作圖：Atomic Commit 摘取與 Stash 暫存倉",
+        cluster: "Cluster A · Git 版控實戰",
+        color: "#a855f7",
+        x: 155, y: 235,
+        wiki: "[[tools/git]] | [[playbooks/git-version-control-and-history-management]]",
+        notes: "【講者提示】左圖展示為什麼每個 Commit 必須獨立（Atomic）：當 feature 分支有 C1、C2、C3，老闆突然只要 C2（匯出 CSV）今天先上 main，因為 C2 很乾淨，直接 cherry-pick 就能摘過去。右圖展示遇到隕石插單時，用 git stash push -u 把未完成工作收進倉庫，修完 Hotfix 再 stash pop 取回。",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Node 04 · Git Branch & Stash Topology</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">Atomic Commit 單點摘取與 Stash 隕石插單救援圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 text-xs font-bold">Micro-Graph: Commit DAG 與暫存流</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Graph 1: Cherry-pick from Atomic Commits -->
+              <div class="p-4 rounded-xl border surface-card space-y-3">
+                <div class="text-xs font-bold text-blue-400 uppercase">圖 1：為什麼要 Atomic Commit？支援無痛 Cherry-Pick</div>
+                <svg viewBox="0 0 400 175" class="w-full h-36 rounded-lg muted-box p-2">
+                  <!-- main branch -->
+                  <text x="12" y="45" fill="#94a3b8" font-size="11" font-weight="bold">main</text>
+                  <line x1="60" y1="40" x2="360" y2="40" stroke="#3b82f6" stroke-width="3"/>
+                  <circle cx="85" cy="40" r="12" fill="#1e40af" stroke="#60a5fa" stroke-width="2"/>
+                  <text x="85" y="44" text-anchor="middle" fill="#fff" font-size="10">M1</text>
+
+                  <circle cx="310" cy="40" r="14" fill="#10b981" stroke="#6ee7b7" stroke-width="2"/>
+                  <text x="310" y="44" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">C2'</text>
+
+                  <!-- feature branch -->
+                  <text x="12" y="135" fill="#94a3b8" font-size="11" font-weight="bold">feature</text>
+                  <path d="M 85 52 L 125 130 L 340 130" fill="none" stroke="#a855f7" stroke-width="3"/>
+                  <circle cx="145" cy="130" r="12" fill="#6b21a8" stroke="#c084fc" stroke-width="2"/>
+                  <text x="145" y="134" text-anchor="middle" fill="#fff" font-size="10">C1</text>
+
+                  <circle cx="225" cy="130" r="14" fill="#10b981" stroke="#6ee7b7" stroke-width="2"/>
+                  <text x="225" y="134" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">C2</text>
+                  <text x="225" y="158" text-anchor="middle" fill="#34d399" font-size="10">匯出CSV(獨立)</text>
+
+                  <circle cx="305" cy="130" r="12" fill="#6b21a8" stroke="#c084fc" stroke-width="2"/>
+                  <text x="305" y="134" text-anchor="middle" fill="#fff" font-size="10">C3</text>
+
+                  <!-- cherry-pick arrow -->
+                  <path d="M 232 115 Q 265 75 296 48" fill="none" stroke="#10b981" stroke-width="2.5" stroke-dasharray="4,3"/>
+                  <text x="245" y="75" fill="#34d399" font-size="10" font-weight="bold">git cherry-pick C2</text>
+                </svg>
+                <p class="text-xs text-secondary leading-relaxed">
+                  每個 Commit 只做一件事（如 <code>C2</code> 僅含匯出 CSV），當老闆臨時要求單獨釋出時，切回 <code>main</code> 執行 <code>git cherry-pick C2</code> 即可精準複製！
+                </p>
+              </div>
+
+              <!-- Graph 2: Stash Workflow -->
+              <div class="p-4 rounded-xl border surface-card space-y-3">
+                <div class="text-xs font-bold text-amber-400 uppercase">圖 2：遭遇「隕石插單」的 Stash 暫存倉流向</div>
+                <div class="space-y-2 text-xs">
+                  <div class="p-2.5 rounded-lg muted-box border flex items-center justify-between">
+                    <span><strong>Step 1</strong> · 開發中斷收進倉庫</span>
+                    <code class="px-2 py-0.5 rounded bg-slate-900 text-amber-300">git stash push -u -m "WIP"</code>
+                  </div>
+                  <div class="flow-arrow-d">↓ (工作區瞬間變乾淨，包含 -u 未追蹤新檔案)</div>
+                  <div class="p-2.5 rounded-lg muted-box border flex items-center justify-between">
+                    <span><strong>Step 2</strong> · 切回主幹修 P0 Bug</span>
+                    <code class="px-2 py-0.5 rounded bg-slate-900 text-blue-300">git switch main && hotfix</code>
+                  </div>
+                  <div class="flow-arrow-d">↓ (緊急修復上線後，切回原開發分支)</div>
+                  <div class="p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-between">
+                    <span><strong>Step 3</strong> · 取出暫存繼續開發</span>
+                    <code class="px-2 py-0.5 rounded bg-slate-900 text-emerald-300">git stash pop (或 apply)</code>
+                  </div>
+                </div>
+                <div class="text-[11px] text-rose-400 font-medium pt-1">
+                  ⚠️ 版控死穴：若 <code>.env</code> 已被 Commit 過，補寫 <code>.gitignore</code> 無效！必須執行 <code>git rm --cached .env</code>。
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N05",
+        index: 4,
+        shortLabel: "Git 歷史修改決策樹",
+        title: "N05 · Git 歷史修改決策樹與 Reset 三區狀態圖",
+        cluster: "Cluster A · Git 版控實戰",
+        color: "#a855f7",
+        x: 330, y: 235,
+        wiki: "[[playbooks/git-version-control-and-history-management]] | [[tools/git]]",
+        notes: "【講者提示】這張二元決策樹是所有新人的護身符：想要改已經 Commit 的紀錄，第一個問題永遠是『Push 到遠端共享分支了沒？』是的話，右轉用 git revert 產生反向 Commit；否的話，左轉用 --amend 或 reset。萬一誤按 reset --hard 毀掉心血，立刻用 git reflog 找回 Commit Hash！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Node 05 · History Modification Decision Tree</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">Git 歷史修改二元決策樹與 Reset 狀態空間</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 text-xs font-bold">Micro-Graph: 決策樹與三區影響圖</span>
+            </div>
+
+            <!-- Decision Tree Visual -->
+            <div class="p-4 rounded-2xl border surface-card space-y-3 text-xs">
+              <div class="mx-auto max-w-md p-2.5 rounded-xl bg-blue-600/20 border-2 border-blue-500 text-center font-bold text-sm">
+                🤔 決策起點：這筆 Commit 是否已 Push 到遠端共享分支 (main/develop)？
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                <!-- Left Branch: NO -->
+                <div class="p-3.5 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/5 space-y-2">
+                  <div class="font-bold text-emerald-400 text-center border-b border-emerald-500/20 pb-1.5">
+                    ↙ 【否】僅在本地或個人分支 (可改寫歷史)
+                  </div>
+                  <div class="grid grid-cols-3 gap-2 text-center pt-1">
+                    <div class="p-2 rounded muted-box border">
+                      <div class="font-mono font-bold text-blue-400">--amend</div>
+                      <div class="text-[11px] text-secondary mt-1">補漏檔或改最後一筆訊息</div>
+                    </div>
+                    <div class="p-2 rounded muted-box border">
+                      <div class="font-mono font-bold text-emerald-400">reset HEAD~N</div>
+                      <div class="text-[11px] text-secondary mt-1">退回 N 筆零碎測試重新打包</div>
+                    </div>
+                    <div class="p-2 rounded muted-box border">
+                      <div class="font-mono font-bold text-purple-400">rebase -i</div>
+                      <div class="text-[11px] text-secondary mt-1">多筆互動式合併/排序/刪除</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Branch: YES -->
+                <div class="p-3.5 rounded-xl border-2 border-amber-500/40 bg-amber-500/5 space-y-2 flex flex-col justify-between">
+                  <div class="font-bold text-amber-400 text-center border-b border-amber-500/20 pb-1.5">
+                    ↘ 【是】已在遠端共享分支 (嚴禁改寫歷史！)
+                  </div>
+                  <div class="p-3 rounded-lg surface-card border border-amber-500/40 text-center">
+                    <div class="font-mono font-bold text-sm text-amber-300">git revert &lt;commit-hash&gt;</div>
+                    <div class="text-secondary mt-1">產生一筆<strong>「完全相反的新 Commit」</strong>抵銷變更，保留歷史軌跡並安全觸發 CI/CD（發版釘上 <code>git tag v1.0.0</code>）。</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Reset 3 Modes Visual Matrix -->
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div class="p-2.5 rounded-lg muted-box border">
+                  <span class="font-mono font-bold text-blue-400">reset --soft</span>
+                  <div class="text-secondary mt-0.5">Staging: ✅保留 · WorkDir: ✅保留（<strong>多筆合成一筆首選</strong>）</div>
+                </div>
+                <div class="p-2.5 rounded-lg muted-box border">
+                  <span class="font-mono font-bold text-amber-400">reset --mixed (預設)</span>
+                  <div class="text-secondary mt-0.5">Staging: ❌清空 · WorkDir: ✅保留（退回重新挑檔案 add）</div>
+                </div>
+                <div class="p-2.5 rounded-lg muted-box border border-rose-500/30">
+                  <span class="font-mono font-bold text-rose-400">reset --hard</span>
+                  <div class="text-secondary mt-0.5">Staging: ❌清空 · WorkDir: 💥<strong>抹除修改</strong></div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40">
+                  <span class="font-mono font-bold text-emerald-400">🛟 救命藥：git reflog</span>
+                  <div class="text-secondary mt-0.5">調出本機所有操作軌跡，找回被 <code>--hard</code> 或誤刪的分支！</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N06",
+        index: 5,
+        shortLabel: "容器編排選型樹",
+        title: "N06 · 容器編排選型決策樹：Compose vs Swarm vs K8s",
+        cluster: "Cluster B · 雲端與容器基建",
+        color: "#06b6d4",
+        x: 545, y: 105,
+        wiki: "[[comparisons/container-orchestration-compose-vs-swarm-vs-k8s]] | [[tools/kubernetes]]",
+        notes: "【講者提示】從 Cluster A 的版控走出來後，程式碼要部署上線了。我們用這棵選型決策樹告訴新人：為什麼本地開發用 Docker Compose 就好，但 Production 多機環境需要 Kubernetes (K8s)？同時提醒：除非有特殊合規限制，否則優先用 EKS/GKE 等雲端代管 K8s，別自己維護 Control Plane。",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Node 06 · Container Orchestration Decision Tree</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">容器編排選型決策樹與 K8s 調度三階段</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold">Micro-Graph: 架構選型樹 + 調度管線</span>
+            </div>
+
+            <!-- Decision Tree -->
+            <div class="p-4 rounded-2xl border surface-card space-y-4 text-xs">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Branch 1: Compose -->
+                <div class="p-4 rounded-xl border surface-card space-y-2">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-sm text-blue-400">1. Docker Compose</span>
+                    <span class="px-2 py-0.5 rounded bg-blue-500/15 text-blue-400">單機 / Local Dev</span>
+                  </div>
+                  <div class="p-2 rounded muted-box font-mono text-[11px]">條件：本地開發環境或單機小工具</div>
+                  <p class="text-secondary leading-relaxed">
+                    • 單一 <code>docker-compose.yml</code> 一鍵啟動 API + Postgres + Redis。<br/>
+                    • ❌ <strong>致命限制</strong>：侷限單一實體機，無跨節點高可用與自動擴縮。
+                  </p>
+                </div>
+
+                <!-- Branch 2: Swarm -->
+                <div class="p-4 rounded-xl border surface-card space-y-2">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-sm text-emerald-400">2. Docker Swarm</span>
+                    <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">輕量跨機叢集</span>
+                  </div>
+                  <div class="p-2 rounded muted-box font-mono text-[11px]">條件：3~10 台機器 + 無專職 SRE</div>
+                  <p class="text-secondary leading-relaxed">
+                    • Docker 引擎內建，直接沿用 Compose 語法加上 <code>deploy</code> 即可跨機負載平衡。<br/>
+                    • ⚠️ <strong>限制</strong>：第三方監控與雲端原生生態系支援度較弱。
+                  </p>
+                </div>
+
+                <!-- Branch 3: K8s -->
+                <div class="p-4 rounded-xl border-2 border-cyan-500/50 bg-cyan-500/5 space-y-2">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-sm text-cyan-400">3. Kubernetes (K8s)</span>
+                    <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">業界生產標準</span>
+                  </div>
+                  <div class="p-2 rounded muted-box font-mono text-[11px]">條件：微服務 / 需 HPA / 零信任隔離</div>
+                  <p class="text-secondary leading-relaxed">
+                    • <strong>宣告式期望狀態 (Declarative YAML)</strong>。<br/>
+                    • 💡 <strong>實務鐵則</strong>：優先採用公有雲代管服務 (<strong>AWS EKS / GCP GKE</strong>)，省去自建維護高昂成本。
+                  </p>
+                </div>
+              </div>
+
+              <!-- K8s Scheduler 3-Step Pipeline Graph -->
+              <div class="p-3.5 rounded-xl muted-box border">
+                <div class="font-bold text-cyan-400 mb-2">⚙️ K8s Scheduler（調度器）決定新容器落腳哪台機器的三階段管線：</div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-center">
+                  <div class="p-2.5 rounded-lg surface-card border">
+                    <span class="font-bold text-blue-400">Step 1 · 過濾 (Filtering)</span>
+                    <div class="text-secondary mt-0.5">剔除剩餘 CPU/RAM 小於容器宣告 <code>Requests</code> 的機器</div>
+                  </div>
+                  <div class="p-2.5 rounded-lg surface-card border">
+                    <span class="font-bold text-indigo-400">Step 2 · 評分 (Scoring)</span>
+                    <div class="text-secondary mt-0.5">優先將同服務副本分散至不同實體機（防單點故障）</div>
+                  </div>
+                  <div class="p-2.5 rounded-lg surface-card border">
+                    <span class="font-bold text-emerald-400">Step 3 · 綁定 (Binding)</span>
+                    <div class="text-secondary mt-0.5">指派最高分節點啟動容器，支援 0 秒停機滾動更新</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N07",
+        index: 6,
+        shortLabel: "Ingress vs Gateway",
+        title: "N07 · K8s 網路拓撲圖：南北向 Ingress / Gateway 與東西向 Service",
+        cluster: "Cluster B · 雲端與容器基建",
+        color: "#06b6d4",
+        x: 775, y: 105,
+        wiki: "[[comparisons/ingress-vs-api-gateway]] | [[tools/kubernetes]]",
+        notes: "【講者提示】很多新人分不清 Ingress、API Gateway 跟 Service。這張 L7 封包流向圖一目了然：外部 HTTPS 進來先到 Ingress（基礎設施層，省下租多個雲端 LB 的錢並統一做 SSL 解密），如果是 /api/* 再轉給 API Gateway（業務層，做 JWT 驗證與客戶限流），最後透過 K8s Service 的固定 ClusterIP 與內部 DNS 找到隨時會重生的 Pod。",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Node 07 · L7 Packet Routing Topology</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">南北向 (Ingress vs API Gateway) 與東西向 (Service) 拓撲圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold">Micro-Graph: 封包路由拓撲圖</span>
+            </div>
+
+            <!-- Visual Packet Flow Graph -->
+            <div class="p-4 rounded-2xl border surface-card space-y-4 text-xs">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 items-stretch">
+                <!-- Step 1: External -->
+                <div class="p-3 rounded-xl muted-box border flex flex-col justify-between">
+                  <div>
+                    <span class="text-[11px] font-mono text-secondary">南北向入口 01</span>
+                    <div class="font-bold text-sm mt-0.5">外部 HTTPS 流量</div>
+                    <p class="text-secondary mt-1">全叢集只租用<strong>單一雲端 Load Balancer</strong> 指向叢集入口，省下高昂計時費用。</p>
+                  </div>
+                  <div class="mt-2 text-right font-mono text-cyan-400">HTTPS (443) →</div>
+                </div>
+
+                <!-- Step 2: Ingress -->
+                <div class="p-3 rounded-xl border-2 border-amber-500/50 bg-amber-500/10 flex flex-col justify-between">
+                  <div>
+                    <span class="text-[11px] font-mono text-amber-400 font-bold">基礎設施層 (SRE 維護)</span>
+                    <div class="font-bold text-sm text-amber-300 mt-0.5">K8s Ingress</div>
+                    <ul class="text-secondary mt-1 space-y-1">
+                      <li>• <strong>SSL 憑證卸載</strong>（統一解密為純 HTTP）</li>
+                      <li>• <strong>L7 路徑分流</strong>（<code>/*</code> 轉前端，<code>/api/*</code> 轉 Gateway）</li>
+                    </ul>
+                  </div>
+                  <div class="mt-2 text-right font-mono text-amber-300">純 HTTP →</div>
+                </div>
+
+                <!-- Step 3: API Gateway -->
+                <div class="p-3 rounded-xl border-2 border-purple-500/50 bg-purple-500/10 flex flex-col justify-between">
+                  <div>
+                    <span class="text-[11px] font-mono text-purple-400 font-bold">業務應用層 (後端維護)</span>
+                    <div class="font-bold text-sm text-purple-300 mt-0.5">API Gateway</div>
+                    <ul class="text-secondary mt-1 space-y-1">
+                      <li>• <strong>認證授權</strong> (JWT / OAuth / API Key)</li>
+                      <li>• <strong>業務限流</strong> (依免費/付費等級 Rate Limit)</li>
+                      <li>• 協議轉換 (REST 轉 gRPC) 與計費</li>
+                    </ul>
+                  </div>
+                  <div class="mt-2 text-right font-mono text-purple-300">內部呼叫 →</div>
+                </div>
+
+                <!-- Step 4: Service & Pods -->
+                <div class="p-3 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 flex flex-col justify-between">
+                  <div>
+                    <span class="text-[11px] font-mono text-emerald-400 font-bold">東西向網路 (Service + DNS)</span>
+                    <div class="font-bold text-sm text-emerald-300 mt-0.5">K8s Service (ClusterIP)</div>
+                    <p class="text-secondary mt-1">
+                      容器隨時死掉重建、IP 每次都變！必須透過固定域名 <code>http://order-service:8080</code> 自動 Round-Robin 負載平衡。
+                    </p>
+                  </div>
+                  <div class="mt-2 text-right font-mono text-emerald-300">Pod 1 / Pod 2 / Pod 3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N08",
+        index: 7,
+        shortLabel: "K8s 探針與防壞鄰居",
+        title: "N08 · K8s 韌性狀態圖：雙探針 (Probes)、防壞鄰居 OOM 與零信任",
+        cluster: "Cluster B · 雲端與容器基建",
+        color: "#06b6d4",
+        x: 660, y: 235,
+        wiki: "[[tools/kubernetes]]",
+        notes: "【講者提示】這個節點在圖譜上同時承接了 N05 (Git Tag 發版) 與 N11 (Redis BigKey 事故)！左圖展示為什麼發版一定要配 Readiness Probe（否則冷啟動中的容器會直接被灌入流量回傳 502）；右圖展示沒有配 Memory Limits 時，一個爛服務會觸發 OS OOM Killer 把鄰居全部殺光！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Node 08 · Resilience Probes & Isolation Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">健康檢查雙探針狀態機、防壞鄰居 OOM 與零信任資安</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold">Micro-Graph: 探針狀態機 + 資源沙盒圖</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <!-- Graph 1: Liveness vs Readiness State Machine -->
+              <div class="p-4 rounded-xl border surface-card space-y-2.5">
+                <div class="font-bold text-emerald-400 uppercase">圖 1：雙探針 (Probes) 失敗時的處置分流圖</div>
+                <div class="p-3 rounded-lg muted-box border space-y-2">
+                  <div class="flex items-center justify-between p-2 rounded surface-card border border-rose-500/40">
+                    <div>
+                      <div class="font-bold text-rose-400">Liveness Probe 失敗</div>
+                      <div class="text-secondary">「你還活著嗎？」(Deadlock 卡死)</div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded bg-rose-500/20 text-rose-300 font-bold">💀 直接殺掉容器重啟</span>
+                  </div>
+                  <div class="flex items-center justify-between p-2 rounded surface-card border border-blue-500/40">
+                    <div>
+                      <div class="font-bold text-blue-400">Readiness Probe 失敗</div>
+                      <div class="text-secondary">「準備好接客了嗎？」(正載入快取/建連線池)</div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 font-bold">🛡️ 不殺！暫從 Service 剔除分流</span>
+                  </div>
+                </div>
+                <p class="text-secondary">
+                  ⚠️ <strong>發版坑點</strong>：未設 Readiness Probe 時，滾動更新一啟動新容器就會把流量灌進去，熱機未完直接回傳大量 <code>Connection Refused</code>！
+                </p>
+              </div>
+
+              <!-- Graph 2: Noisy Neighbor & Zero Trust -->
+              <div class="p-4 rounded-xl border surface-card space-y-2.5">
+                <div class="font-bold text-amber-400 uppercase">圖 2：防範「壞鄰居效應」與零信任 Workload Identity</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="p-2.5 rounded-lg border border-rose-500/40 bg-rose-500/5">
+                    <div class="font-bold text-rose-400">❌ 未設 Memory Limits</div>
+                    <p class="text-secondary mt-1">單一異常容器無上限暴食記憶體 ➔ 觸發實體機 <strong>OS OOM Killer 無差別殺死同機所有正常容器！</strong></p>
+                  </div>
+                  <div class="p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/5">
+                    <div class="font-bold text-emerald-400">✅ Requests + Limits</div>
+                    <p class="text-secondary mt-1"><code>Requests</code> 供 Scheduler 保底調度；<code>Limits</code> 設硬性上限，超標僅單獨制裁該問題容器。</p>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-lg muted-box border space-y-1">
+                  <div>🔒 <strong>NetworkPolicy 微型防火牆</strong>：阻斷 <code>frontend</code> 直連 <code>mysql:3306</code>。</div>
+                  <div>🔑 <strong>Workload Identity</strong>：<strong>嚴禁塞入永久 IAM Key！</strong>綁定 <code>ServiceAccount</code> 動態換取短效 Token。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N09",
+        index: 8,
+        shortLabel: "快取三大讀寫模式",
+        title: "N09 · 快取讀寫時序圖：Cache-Aside vs Write-Through vs Write-Back",
+        cluster: "Cluster C · 快取策略與事故",
+        color: "#f59e0b",
+        x: 110, y: 425,
+        wiki: "[[concepts/caching-strategies-and-pitfalls]]",
+        notes: "【講者提示】當流量通過 K8s 進到後端應用程式，第一道加速防線就是快取（ns 等級 vs 資料庫 ms 等級，差一萬倍）。這張三並排流向圖請帶新人看清楚 Cache-Aside 寫入時為什麼是『1. 更新 DB ➔ 2. 刪除 Cache』：因為如果用更新快取，連續寫 10 次沒人讀就白算了 9 次！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Node 09 · Cache Read/Write Sequence Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">快取三大讀寫模式流向圖 (局部性原理與萬倍速度差)</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-bold">Micro-Graph: 三模式讀寫時序圖</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+              <!-- Pattern 1: Cache-Aside -->
+              <div class="p-4 rounded-xl border-2 border-blue-500/50 bg-blue-500/5 space-y-2.5">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-sm text-blue-400">1. Cache-Aside</span>
+                  <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">讀多寫少最主流</span>
+                </div>
+                <div class="p-2.5 rounded-lg surface-card border space-y-1.5">
+                  <div class="font-semibold text-emerald-400">📖 讀取流 (Read)：</div>
+                  <div>App 查 Cache ➔ 若 Miss ➔ App 查 DB ➔ 回寫 Cache</div>
+                  <div class="font-semibold text-amber-400 pt-1">✍️ 寫入流 (Write)：</div>
+                  <div><strong>Step 1: App 直接更新 DB</strong><br/><strong>Step 2: App「刪除」Cache</strong></div>
+                </div>
+                <p class="text-secondary leading-relaxed">
+                  💡 <strong>為何用刪除而非更新？</strong>若短時間連續寫入 10 次卻無人讀取，更新快取會浪費 9 次無效計算；直接刪除只需等有人讀時算 1 次 (Lazy Loading)。
+                </p>
+              </div>
+
+              <!-- Pattern 2: Write-Through -->
+              <div class="p-4 rounded-xl border surface-card space-y-2.5">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-sm text-emerald-400">2. Write-Through</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">強一致性 (金融)</span>
+                </div>
+                <div class="p-2.5 rounded-lg muted-box border space-y-1.5">
+                  <div class="font-semibold">📖 讀取流：</div>
+                  <div>App 只對 Cache 操作，Miss 時由 Cache 同步讀 DB</div>
+                  <div class="font-semibold pt-1">✍️ 寫入流：</div>
+                  <div>App 寫入 Cache ➔ <strong>Cache「同步」寫入 DB</strong> ➔ 兩邊成功才回傳</div>
+                </div>
+                <p class="text-secondary leading-relaxed">
+                  ⚖️ <strong>Trade-off</strong>：保證快取與 DB 強一致，但每次寫入都被 DB 同步 I/O 拖慢，寫入 Latency 較高。
+                </p>
+              </div>
+
+              <!-- Pattern 3: Write-Back -->
+              <div class="p-4 rounded-xl border surface-card space-y-2.5">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-sm text-purple-400">3. Write-Back</span>
+                  <span class="px-2 py-0.5 rounded bg-purple-500/15 text-purple-400">極致寫入吞吐 (IoT)</span>
+                </div>
+                <div class="p-2.5 rounded-lg muted-box border space-y-1.5">
+                  <div class="font-semibold">✍️ 非同步寫入流：</div>
+                  <div>1. App 寫入 Cache <strong>立即回傳成功</strong><br/>2. Cache 於背景<strong>非同步批次 (Batch)</strong> 寫入 DB</div>
+                </div>
+                <p class="text-secondary leading-relaxed">
+                  ⚖️ <strong>Trade-off</strong>：寫入吞吐量極高（甚至 DB 短暫維護也不影響前端），但<strong>若快取節點在落盤前當機，資料將永久遺失</strong>！
+                </p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N10",
+        index: 9,
+        shortLabel: "穿透/擊穿/雪崩防禦",
+        title: "N10 · 快取三大災難攔截圖：穿透、擊穿與雪崩防禦拓撲",
+        cluster: "Cluster C · 快取策略與事故",
+        color: "#f59e0b",
+        x: 280, y: 425,
+        wiki: "[[concepts/caching-strategies-and-pitfalls]] | [[tools/redis]]",
+        notes: "【講者提示】這張攔截圖把三種最常搞混的快取災難視覺化：1. 穿透是『查根本不存在的資料 (id=-1)』，用快取空值 (null) 攔截；2. 擊穿是『單一超熱門 HotKey 過期瞬間萬人衝進來』，用 Mutex Lock 互斥鎖只放 1 個人進 DB；3. 雪崩是『大批 Key 同時過期』，在 TTL 加上 random(0,300) 抖動打散。",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Node 10 · Cache Disaster Defense Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">三大快取災難攻擊路徑與防禦攔截圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-bold">Micro-Graph: 流量攻擊與防禦閘門圖</span>
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <!-- Disaster 1: Penetration -->
+              <div class="p-3.5 rounded-xl border surface-card grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <div class="md:col-span-3 font-bold text-rose-400 text-sm">
+                  1. 快取穿透<br/><span class="text-xs font-normal text-secondary">Cache Penetration</span>
+                </div>
+                <div class="md:col-span-4 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30">
+                  <strong>攻擊流</strong>：惡意爬蟲狂查 <code>user_id = -1, -2</code>（快取與 DB 皆無此資料）➔ 100% Miss 直接打死 DB。
+                </div>
+                <div class="md:col-span-5 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/40">
+                  <strong>🛡️ 攔截閘門</strong>：DB 查無資料時，將<strong>「空結果 (<code>null</code>)」也寫入快取並設短 TTL (30~60s)</strong>，或前置 Bloom Filter。
+                </div>
+              </div>
+
+              <!-- Disaster 2: Breakdown -->
+              <div class="p-3.5 rounded-xl border surface-card grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <div class="md:col-span-3 font-bold text-amber-400 text-sm">
+                  2. 快取擊穿<br/><span class="text-xs font-normal text-secondary">Cache Breakdown</span>
+                </div>
+                <div class="md:col-span-4 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <strong>攻擊流</strong>：雙 11 <strong>單一超熱門 HotKey 過期瞬間</strong>，萬級併發同時 Miss 並同時執行複雜 SQL 重建。
+                </div>
+                <div class="md:col-span-5 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/40">
+                  <strong>🛡️ 攔截閘門</strong>：<strong>互斥鎖 (Mutex Lock)</strong> — 僅搶到鎖的 1 個請求能查 DB 更新快取，其餘請求短暫等待後重試讀快取。
+                </div>
+              </div>
+
+              <!-- Disaster 3: Avalanche -->
+              <div class="p-3.5 rounded-xl border surface-card grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <div class="md:col-span-3 font-bold text-purple-400 text-sm">
+                  3. 快取雪崩<br/><span class="text-xs font-normal text-secondary">Cache Avalanche</span>
+                </div>
+                <div class="md:col-span-4 p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                  <strong>攻擊流</strong>：<strong>大量 Key 設相同 TTL 在同一秒集體失效</strong>（或 Redis 節點當機），全站流量瞬間雪崩湧向 DB。
+                </div>
+                <div class="md:col-span-5 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/40">
+                  <strong>🛡️ 攔截閘門</strong>：<strong>TTL 加上隨機抖動值</strong> <code>ttl = 3600 + random(0, 300)</code> 打散過期時間 + Redis Cluster 高可用與降級。
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N11",
+        index: 10,
+        shortLabel: "🔥 20MB BigKey 事故",
+        title: "N11 · 事故因果骨牌圖：Redis 20MB BigKey + HotKey 連環災難",
+        cluster: "Cluster C · 線上事故覆盤",
+        color: "#f43f5e",
+        x: 215, y: 575,
+        wiki: "[[postmortems/2026-11-12-redis-hotkey-bigkey-cluster-failover]] | [[tools/redis]]",
+        notes: "【講者提示】這是整張知識圖譜中最具代表性的『跨領域事故節點』！請帶著聽眾順著骨牌 1 看到骨牌 5：原本只是一顆 20MB 的設定檔 Key 被每 5 秒輪詢一次，結果因為名稱固定永遠落在同一台 Redis Master，塞爆頻寬觸發連環 Failover，最後連帶讓 K8s 的 Client Pod CPU 忽高忽低，害死 N08 的 HPA 縮容機制！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-400">Node 11 · Postmortem Domino Causality Graph (Titansoft Case)</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">HotKey + 20MB BigKey 引發叢集 Failover 與 K8s HPA 失靈骨牌圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold">Micro-Graph: 跨元件因果骨牌圖</span>
+            </div>
+
+            <!-- Domino Graph -->
+            <div class="p-4 rounded-2xl border-2 border-rose-500/40 surface-card space-y-4 text-xs">
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-2.5 items-stretch">
+                <div class="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40">
+                  <div class="font-mono font-bold text-rose-400">骨牌 1 · 根因</div>
+                  <div class="font-bold text-sm my-1">20MB 固定名稱 Key</div>
+                  <p class="text-secondary">既是 <strong>20MB BigKey</strong>，又被所有 Pod 每 5 秒排程拉取 (<strong>HotKey, LFU=255</strong>)。</p>
+                </div>
+                <div class="p-3 rounded-xl muted-box border">
+                  <div class="font-mono font-bold text-amber-400">骨牌 2 · 分片傾斜</div>
+                  <div class="font-bold text-sm my-1">單一 Master 塞爆</div>
+                  <p class="text-secondary">固定 Key 名稱經 CRC16 Hash 永遠落在同一 Slot，加機器也無法分散該 Key！</p>
+                </div>
+                <div class="p-3 rounded-xl muted-box border">
+                  <div class="font-mono font-bold text-orange-400">骨牌 3 · 阻塞與 OOM</div>
+                  <div class="font-bold text-sm my-1">頻寬爆表 + 逐出資料</div>
+                  <p class="text-secondary">單執行緒忙於吐 20MB 阻塞後續指令；觸發 OOM 按策略逐出其他正常 Key。</p>
+                </div>
+                <div class="p-3 rounded-xl muted-box border">
+                  <div class="font-mono font-bold text-purple-400">骨牌 4 · 叢集風暴</div>
+                  <div class="font-bold text-sm my-1">主從連環 Failover</div>
+                  <p class="text-secondary">主執行緒卡死超過心跳 Timeout 觸發 Failover，新 Master 接手後又立刻被打死互踢！</p>
+                </div>
+                <div onclick="goToSlide(7)" class="cursor-pointer p-3 rounded-xl bg-cyan-500/15 border-2 border-cyan-500/50 hover:border-cyan-400 transition">
+                  <div class="font-mono font-bold text-cyan-400">骨牌 5 · 跨界衝擊 N08</div>
+                  <div class="font-bold text-sm my-1">K8s HPA 縮容卡死</div>
+                  <p class="text-secondary">Client 每 5 秒反序列化 20MB 造成 CPU 鋸齒震盪，Pod 升到頂後降不下來！</p>
+                </div>
+              </div>
+
+              <!-- Action Items Graph -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div class="p-2.5 rounded-lg muted-box border">
+                  <span class="font-bold text-amber-400">🔍 CLI 偵測指令</span>
+                  <div class="font-mono text-[11px] text-secondary mt-1"><code>redis-cli --hotkeys</code> (需 allkeys-lfu)<br/><code>redis-cli --bigkeys</code></div>
+                </div>
+                <div class="p-2.5 rounded-lg muted-box border">
+                  <span class="font-bold text-blue-400">🩹 短期止血 (Workaround)</span>
+                  <div class="text-secondary mt-1">輪詢從 5s 改 1m；搬空該 Node 其他正常 Slot 讓其專職服務 BigKey（<strong>切記不可把 Master Slot 全搬空否則降級為 Slave！</strong>）</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/40">
+                  <span class="font-bold text-emerald-400">🛠️ 長期根治 (Root Fix)</span>
+                  <div class="text-secondary mt-1"><strong>將 20MB BigKey 拆分為多個小 Key</strong>，打散至不同節點；刪除大 Key 必用非同步 <code>UNLINK</code>。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N12",
+        index: 11,
+        shortLabel: "PG 型別與部分索引",
+        title: "N12 · PostgreSQL 型別護欄與 Partial Index B-Tree 對比圖",
+        cluster: "Cluster D · 資料庫調優",
+        color: "#10b981",
+        x: 545, y: 425,
+        wiki: "[[tools/postgresql]] | [[sources/2026-11-12-postgresql-outbox-pattern-revamped]]",
+        notes: "【講者提示】進入資料庫群集 (Cluster D)。上半部是三個型別鐵則（INT8 防 21 億溢位、TIMESTAMPTZ、以及 JSONB 遇到 \\x00 會直接報錯的坑）。下半部用 B-Tree 結構圖對比：為什麼查 WHERE published_at IS NULL ORDER BY id 時，索引欄位必須是 (id) 而不是 (published_at)！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Node 12 · PostgreSQL Schema & Partial Index Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">高併發型別三護欄與 Partial Index B-Tree 對比圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-bold">Micro-Graph: 型別攔截 + B-Tree 對比</span>
+            </div>
+
+            <!-- 3 Data Type Guardrails -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 rounded-xl border surface-card">
+                <div class="font-mono font-bold text-emerald-400">1. id INT8 IDENTITY</div>
+                <p class="text-secondary mt-1">嚴禁使用 <code>INT4</code> (21.4 億筆即溢位造成全站寫入當機)。全面使用 64-bit <code>INT8</code> (<code>bigint</code>)。</p>
+              </div>
+              <div class="p-3 rounded-xl border surface-card">
+                <div class="font-mono font-bold text-blue-400">2. TIMESTAMPTZ</div>
+                <p class="text-secondary mt-1">永遠使用含時區的 <code>TIMESTAMPTZ</code>，防止跨時區容器與資料庫時間轉換錯亂。</p>
+              </div>
+              <div class="p-3 rounded-xl border border-rose-500/40 bg-rose-500/5">
+                <div class="font-mono font-bold text-rose-400">3. JSON vs JSONB (\x00 陷阱)</div>
+                <p class="text-secondary mt-1"><code>JSONB</code> 解析慢且<strong>遇到 <code>\x00</code> (NULL 字元) 會直接報錯拒絕寫入</strong>！純訊息轉發請用 <code>JSON</code>。</p>
+              </div>
+            </div>
+
+            <!-- B-Tree Index Visual Comparison -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div class="p-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/5 space-y-2">
+                <div class="font-bold text-emerald-400">✅ 正確 Partial Index：索引建在排序鍵 <code>(id)</code></div>
+                <pre class="p-2 rounded bg-slate-900 text-emerald-300 text-[11px]"><code>CREATE INDEX idx1 ON outbox (id) WHERE published_at IS NULL;</code></pre>
+                <div class="p-2.5 rounded muted-box border text-center font-mono text-[11px]">
+                  [B-Tree Root] ➔ 葉節點有序排列：<code>id: 101 ➔ 102 ➔ 105</code><br/>
+                  <span class="text-emerald-400">結果：只存未發送列，體積極小，直接滿足 ORDER BY id LIMIT 10！</span>
+                </div>
+              </div>
+
+              <div class="p-4 rounded-xl border-2 border-rose-500/50 bg-rose-500/5 space-y-2">
+                <div class="font-bold text-rose-400">❌ 災難誤區：把索引建在過濾鍵 <code>(published_at)</code></div>
+                <pre class="p-2 rounded bg-slate-900 text-rose-300 text-[11px]"><code>CREATE INDEX idx_bad ON outbox (published_at) WHERE published_at IS NULL;</code></pre>
+                <div class="p-2.5 rounded muted-box border text-center font-mono text-[11px]">
+                  [B-Tree Root] ➔ 葉節點全部是：<code>NULL ➔ NULL ➔ NULL</code><br/>
+                  <span class="text-rose-400">結果：毫無鑑別度且完全無法幫 id 排序，退化為掃描排序！</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N13",
+        index: 12,
+        shortLabel: "Outbox 與分區表革新",
+        title: "N13 · Outbox 雙寫架構與 List Partitioning 分區搬移圖",
+        cluster: "Cluster D · 分散式交易",
+        color: "#10b981",
+        x: 775, y: 425,
+        wiki: "[[concepts/transactional-outbox-pattern]] | [[tools/postgresql]]",
+        notes: "【講者提示】這頁展示微服務如何用 Outbox 解決『寫 DB + 發 Kafka』的雙寫問題，以及最震撼的高併發調優：為什麼單表 Partial Index 在高頻讀寫下會因為 Dead Tuples 來不及被 Vacuum，導致 Index Only Scan 發生 9,600 萬次 Heap Fetches（慢 10 萬倍變 18.5 秒）？右圖展示用 PARTITION BY LIST 拆成未發送與已發送兩個分區，更新時自動搬移，歷史分區直接瞬間 TRUNCATE！",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Node 13 · Outbox MVCC & List Partitioning Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">根治 9,600 萬次 Heap Fetch：List Partitioning 自動搬移圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-bold">Micro-Graph: MVCC 退化 vs 分區搬移</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <!-- Left: Why Single Table Degrades -->
+              <div class="p-4 rounded-xl border border-rose-500/40 bg-rose-500/5 space-y-2.5">
+                <div class="font-bold text-rose-400 uppercase">💥 傳統單表在高併發下的 MVCC 退化 (0.13ms ➔ 18.5s)</div>
+                <div class="space-y-1.5 text-secondary">
+                  <div class="p-2 rounded surface-card border">1. 嚴禁按 <code>created_at</code> 排序（多 Pod 時鐘偏移導致亂序），必用 <code>ORDER BY id</code>；單次抓 <code>~100 筆</code> 並依 <code>user_id</code> 分組隔離 Poison Pill。</div>
+                  <div class="p-2 rounded surface-card border border-rose-500/40">
+                    2. <strong>致命 Heap Fetch 雪崩</strong>：高頻 Insert + Update (<code>published_at=NOW()</code>) 產生海量 Dead Tuples，<code>autovacuum</code> 來不及更新 Visibility Map，導致 <code>Index Only Scan</code> 被迫回表檢查 <strong>9,663 萬筆 Heap 資料</strong>！
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Partitioned Outbox Architecture -->
+              <div class="p-4 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/5 space-y-2.5">
+                <div class="font-bold text-emerald-400 uppercase">🚀 革新架構：<code>PARTITION BY LIST (published_at)</code></div>
+                <div class="grid grid-cols-2 gap-2 text-center">
+                  <div class="p-2.5 rounded-lg surface-card border border-blue-500/40">
+                    <div class="font-mono font-bold text-blue-400">outbox_unpublished</div>
+                    <div class="text-[11px] text-secondary"><code>FOR VALUES IN (NULL)</code><br/>僅此分區建 <code>(id)</code> 索引，體積極小，查詢恆定 <strong>1~3 ms</strong></div>
+                  </div>
+                  <div class="p-2.5 rounded-lg surface-card border border-emerald-500/40">
+                    <div class="font-mono font-bold text-emerald-400">outbox_published</div>
+                    <div class="text-[11px] text-secondary"><code>DEFAULT (非 NULL)</code><br/><strong>完全不建索引！</strong>可定期 <code>TRUNCATE</code> 毫秒級清空</div>
+                  </div>
+                </div>
+                <pre class="p-2 rounded bg-slate-900 text-amber-300 text-[11px] overflow-x-auto"><code>-- ⚠️ 鐵則：UPDATE 必帶分區鍵以觸發 Partition Pruning (分區裁剪)！
+UPDATE outbox SET published_at = NOW()
+WHERE id IN (...) AND published_at IS NULL; -- 自動跨分區搬移 Tuple</code></pre>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "N14",
+        index: 13,
+        shortLabel: "Medallion 資料湖倉",
+        title: "N14 · 資料工程終點站：Medallion 三層架構與事件驅動管線圖",
+        cluster: "Cluster E · 資料工程湖倉",
+        color: "#eab308",
+        x: 660, y: 590,
+        wiki: "[[concepts/medallion-architecture]]",
+        notes: "【講者提示】當後端服務透過 N13 的 Outbox 把業務事件安全推入 Kafka 後，資料就進入了資料工程的領域！這張 Multi-Hop 管線圖展示了現代 Data Lakehouse 的 Medallion 架構（Bronze 原始層 ➔ Silver 企業視圖層 ➔ Gold 應用聚合層），遵循 ELT 思維保留完整重算 (Reprocessing) 能力。",
+        html: `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-yellow-400">Node 14 · Medallion Lakehouse Pipeline Graph</span>
+                <h2 class="text-xl md:text-2xl font-bold mt-0.5">Medallion (Bronze ➔ Silver ➔ Gold) 事件驅動多跳管線圖</h2>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-yellow-500/15 text-yellow-400 text-xs font-bold">Micro-Graph: ELT 多跳資料流向圖</span>
+            </div>
+
+            <!-- 3-Tier Medallion Pipeline Graph -->
+            <div class="p-4 rounded-2xl border surface-card space-y-4 text-xs">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+                <!-- Bronze -->
+                <div class="p-3.5 rounded-xl border-2 border-amber-600/50 bg-amber-600/10 space-y-1.5">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-sm text-amber-400">🥉 Bronze Layer (原始層)</span>
+                    <span class="font-mono text-[11px] px-1.5 py-0.5 rounded muted-box">As-Is / Raw</span>
+                  </div>
+                  <p class="text-secondary leading-relaxed">
+                    • 原封不動接收來自 Outbox/Kafka/API 的原始 Parquet/JSON，附加 <code>_ingested_at</code>。<br/>
+                    • <strong>核心價值</strong>：支援完整歷史稽核與<strong>隨時從頭重算 (Reprocessing)</strong>，絕不丟棄任何欄位。
+                  </p>
+                </div>
+
+                <!-- Silver -->
+                <div class="p-3.5 rounded-xl border-2 border-slate-400/50 bg-slate-400/10 space-y-1.5">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-sm text-slate-300">🥈 Silver Layer (企業視圖)</span>
+                    <span class="font-mono text-[11px] px-1.5 py-0.5 rounded muted-box">3NF / Data Vault</span>
+                  </div>
+                  <p class="text-secondary leading-relaxed">
+                    • 遵循 <strong>ELT</strong> 精神，執行「剛剛好 (Just-enough)」的去重、清洗與跨來源實體對齊。<br/>
+                    • <strong>核心價值</strong>：全企業統一事實來源，供資料科學家與分析師自助查詢與訓練 ML。
+                  </p>
+                </div>
+
+                <!-- Gold -->
+                <div class="p-3.5 rounded-xl border-2 border-yellow-500/60 bg-yellow-500/10 space-y-1.5">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-sm text-yellow-400">🥇 Gold Layer (應用聚合層)</span>
+                    <span class="font-mono text-[11px] px-1.5 py-0.5 rounded muted-box">Star Schema</span>
+                  </div>
+                  <p class="text-secondary leading-relaxed">
+                    • 套用專案商業規則、KPI 聚合與最終品質檢核，採反正規化星狀綱要減少 Join。<br/>
+                    • <strong>核心價值</strong>：Read-optimized，直接供 BI 儀表板與高階決策毫秒級讀取。
+                  </p>
+                </div>
+              </div>
+
+              <!-- Event-Driven Orchestration Flow -->
+              <div class="p-3 rounded-xl muted-box border flex flex-col md:flex-row items-center justify-between gap-2">
+                <div class="font-mono text-[11px] text-secondary">
+                  <strong>實戰編排流</strong>：MinIO S3 (<code>bronze</code> PUT 事件) ➔ <strong>Kafka</strong> (<code>bronze_layer_data</code>) ➔ <strong>Airflow Silver DAG</strong> 清洗寫入 <code>silver</code> ➔ <strong>Kafka</strong> ➔ <strong>Airflow Gold DAG</strong> 按日期聚合輸出！
+                </div>
+                <span class="px-2.5 py-1 rounded bg-rose-500/15 text-rose-400 font-semibold shrink-0">⚠️ 注意防範碎檔 (Small File Problem)</span>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    // Directed Edges defining both Guided Path & Cross-Domain Architecture Links
+    const edges = [
+      // Cluster A internal
+      { from: "N01", to: "N02", type: "guided", label: "進入協作" },
+      { from: "N02", to: "N03", type: "guided", label: "切小交付" },
+      { from: "N02", to: "N04", type: "normal", label: "版控規範" },
+      { from: "N04", to: "N05", type: "guided", label: "歷史整理" },
+      // Cluster A -> Cluster B
+      { from: "N03", to: "N06", type: "cross", label: "部署上線" },
+      { from: "N05", to: "N08", type: "cross", label: "Git Tag 發版" },
+      // Cluster B internal
+      { from: "N06", to: "N07", type: "guided", label: "網路路由" },
+      { from: "N07", to: "N08", type: "guided", label: "容器韌性" },
+      // Cluster B -> Cluster C
+      { from: "N07", to: "N09", type: "cross", label: "API 讀寫快取" },
+      // Cluster C internal
+      { from: "N09", to: "N10", type: "guided", label: "災難防禦" },
+      { from: "N10", to: "N11", type: "guided", label: "真實踩坑" },
+      // Famous Cross-Domain Domino Link: N11 -> N08
+      { from: "N11", to: "N08", type: "domino", label: "害死 K8s HPA!" },
+      // Cluster C -> Cluster D
+      { from: "N09", to: "N12", type: "cross", label: "寫入/穿透 DB" },
+      // Cluster D internal
+      { from: "N12", to: "N13", type: "guided", label: "雙寫與分區" },
+      // Cluster D -> Cluster E
+      { from: "N13", to: "N14", type: "cross", label: "Outbox 推 Kafka" }
+    ];
+
+    let currentIndex = 0;
+    let currentViewMode = 'split';
+
+    function getNodeById(id) {
+      return nodes.find(n => n.id === id);
+    }
+
+    function renderMacroGraph() {
+      const edgesGroup = document.getElementById('graph-edges');
+      const nodesGroup = document.getElementById('graph-nodes');
+      const activeNode = nodes[currentIndex];
+
+      // Draw Edges
+      edgesGroup.innerHTML = edges.map(e => {
+        const n1 = getNodeById(e.from);
+        const n2 = getNodeById(e.to);
+        const isConnectedToActive = (e.from === activeNode.id || e.to === activeNode.id);
+        const isDomino = e.type === 'domino';
+        const isCross = e.type === 'cross' || isDomino;
+
+        const strokeColor = isDomino
+          ? '#f43f5e'
+          : (isConnectedToActive ? '#3b82f6' : 'var(--edge-color)');
+        const strokeWidth = isConnectedToActive || isDomino ? 2.6 : 1.6;
+        const dashArray = isCross ? '6,4' : 'none';
+        const marker = isDomino ? 'url(#arrow-cross)' : (isConnectedToActive ? 'url(#arrow-active)' : 'url(#arrow-normal)');
+
+        const midX = (n1.x + n2.x) / 2;
+        const midY = (n1.y + n2.y) / 2 - 6;
+
+        return `
+          <g opacity="${isConnectedToActive || isDomino ? '1' : '0.55'}">
+            <line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}"
+                  stroke="${strokeColor}" stroke-width="${strokeWidth}"
+                  stroke-dasharray="${dashArray}" marker-end="${marker}" />
+            ${(isConnectedToActive || isDomino) ? `
+              <text x="${midX}" y="${midY}" text-anchor="middle" fill="${isDomino ? '#fb7185' : '#93c5fd'}" font-size="10" font-weight="bold">
+                ${e.label}
+              </text>
+            ` : ''}
+          </g>
+        `;
+      }).join('');
+
+      // Draw Nodes
+      nodesGroup.innerHTML = nodes.map((n, idx) => {
+        const isActive = idx === currentIndex;
+        return `
+          <g onclick="goToSlide(${idx})" class="cursor-pointer group">
+            ${isActive ? `<circle cx="${n.x}" cy="${n.y}" r="24" fill="none" stroke="${n.color}" stroke-width="3" class="active-ring" />` : ''}
+            <circle cx="${n.x}" cy="${n.y}" r="${isActive ? 21 : 17}"
+                    fill="${isActive ? n.color : '#1e293b'}"
+                    stroke="${n.color}" stroke-width="${isActive ? 4 : 2.5}" />
+            <text x="${n.x}" y="${n.y + 4}" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="bold" font-family="monospace">
+              ${n.id}
+            </text>
+            <rect x="${n.x - 58}" y="${n.y + 24}" width="116" height="19" rx="5"
+                  fill="${isActive ? n.color : 'rgba(15, 23, 42, 0.85)'}" />
+            <text x="${n.x}" y="${n.y + 37}" text-anchor="middle" fill="#ffffff" font-size="10.5" font-weight="${isActive ? 'bold' : 'normal'}">
+              ${n.shortLabel}
+            </text>
+          </g>
+        `;
+      }).join('');
+
+      document.getElementById('graph-active-label').textContent = `當前聚焦: ${activeNode.id} (${activeNode.shortLabel})`;
+    }
+
+    function renderSlide() {
+      const node = nodes[currentIndex];
+      const container = document.getElementById('slide-container');
+      container.classList.remove('slide-enter');
+      void container.offsetWidth;
+      container.classList.add('slide-enter');
+      container.innerHTML = node.html;
+
+      // Update Header & Progress
+      const badge = document.getElementById('cluster-badge');
+      badge.textContent = node.cluster;
+      badge.style.borderColor = node.color;
+      badge.style.color = node.color;
+
+      document.getElementById('slide-counter').textContent = `${node.id} (${currentIndex + 1} / ${nodes.length})`;
+      document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / nodes.length) * 100}%`;
+      document.getElementById('wiki-source-badge').textContent = `Wiki: ${node.wiki}`;
+      document.getElementById('notes-text').textContent = node.notes;
+
+      // Render Connected Neighbors Bar
+      const connectedEdges = edges.filter(e => e.from === node.id || e.to === node.id);
+      const connectedBar = document.getElementById('connected-nodes-bar');
+      connectedBar.innerHTML = connectedEdges.map(e => {
+        const isOutgoing = e.from === node.id;
+        const targetId = isOutgoing ? e.to : e.from;
+        const targetNode = getNodeById(targetId);
+        const dirArrow = isOutgoing ? '→' : '←';
+        return `
+          <button onclick="goToSlide(${targetNode.index})"
+                  class="px-2.5 py-1 rounded-md border surface-card hover:border-blue-400 transition flex items-center gap-1 font-medium">
+            <span class="font-mono font-bold" style="color:${targetNode.color}">${dirArrow} ${targetNode.id}</span>
+            <span>${targetNode.shortLabel}</span>
+            <span class="text-[10px] text-secondary">(${e.label})</span>
+          </button>
+        `;
+      }).join('');
+
+      document.getElementById('btn-prev').disabled = currentIndex === 0;
+      document.getElementById('btn-next').disabled = currentIndex === nodes.length - 1;
+
+      renderMacroGraph();
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const graphPanel = document.getElementById('macro-graph-panel');
+      const slidePanel = document.getElementById('slide-panel');
+      const btnSplit = document.getElementById('mode-split');
+      const btnGraph = document.getElementById('mode-graph');
+      const btnSlide = document.getElementById('mode-slide');
+
+      [btnSplit, btnGraph, btnSlide].forEach(b => {
+        b.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition text-secondary hover:text-blue-400";
+      });
+
+      if (mode === 'split') {
+        graphPanel.classList.remove('hidden', 'w-full');
+        graphPanel.classList.add('w-2/5');
+        slidePanel.classList.remove('hidden', 'w-full');
+        slidePanel.classList.add('w-3/5');
+        btnSplit.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition bg-blue-600 text-white";
+      } else if (mode === 'graph') {
+        graphPanel.classList.remove('hidden', 'w-2/5');
+        graphPanel.classList.add('w-full');
+        slidePanel.classList.add('hidden');
+        btnGraph.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition bg-blue-600 text-white";
+      } else if (mode === 'slide') {
+        graphPanel.classList.add('hidden');
+        slidePanel.classList.remove('hidden', 'w-3/5');
+        slidePanel.classList.add('w-full');
+        btnSlide.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition bg-blue-600 text-white";
+      }
+    }
+
+    function goToSlide(idx) {
+      if (idx >= 0 && idx < nodes.length) {
+        currentIndex = idx;
+        if (currentViewMode === 'graph') {
+          setViewMode('split');
+        }
+        renderSlide();
+      }
+    }
+
+    function nextSlide() {
+      if (currentIndex < nodes.length - 1) {
+        currentIndex++;
+        renderSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderSlide();
+      }
+    }
+
+    function toggleNotes() {
+      document.getElementById('notes-drawer').classList.toggle('hidden');
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleNotes();
+      } else if (e.key === 'd' || e.key === 'D') {
+        toggleTheme();
+      } else if (e.key === 'g' || e.key === 'G') {
+        setViewMode(currentViewMode === 'graph' ? 'split' : 'graph');
+      } else if (e.key === 's' || e.key === 'S') {
+        setViewMode(currentViewMode === 'slide' ? 'split' : 'slide');
+      }
+    });
+
+    renderSlide();
+  </script>
+</body>
+</html>
